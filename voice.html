@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="/src/styles.css?v=ui-consistency-1" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <style>
+    body {
+      background-color: #050505;
+      color: #e5e2e1;
+      font-family: "Geist", sans-serif;
+      overflow: hidden;
+    }
+
+    .glass-panel {
+      background: rgba(10, 10, 10, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .orb-glow {
+      filter: blur(60px);
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(0, 240, 255, 0) 70%);
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+
+    .immersive-mode .dim-target,
+    .immersive-mode #voice-transcript-shell,
+    .immersive-mode nav,
+    .immersive-mode #voice-transcript-drawer {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .immersive-mode #particle-container {
+      transform: translate(-50%, -50%) scale(1.72);
+    }
+  </style>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#dbfcff",
+            "on-primary": "#00363a",
+            "primary-container": "#00f0ff",
+            "on-primary-container": "#006970",
+            "primary-fixed": "#7df4ff",
+            "primary-fixed-dim": "#00dbe9",
+            surface: "#131313",
+            "on-surface": "#e5e2e1",
+            "surface-variant": "#353534",
+            "on-surface-variant": "#b9cacb",
+            outline: "#849495",
+            "outline-variant": "#3b494b",
+            "surface-container-low": "#1c1b1b",
+            "surface-container": "#201f1f",
+          },
+          spacing: {
+            "container-max": "1440px",
+            "margin-desktop": "40px",
+            gutter: "24px",
+          },
+          fontFamily: {
+            "label-md": ["JetBrains Mono"],
+            "label-sm": ["JetBrains Mono"],
+            "body-md": ["Geist"],
+            "headline-md": ["Geist"],
+            "headline-lg": ["Geist"],
+            "display-lg": ["Geist"],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+
+<body
+  class="h-screen w-full flex flex-col relative overflow-hidden selection:bg-primary-container selection:text-on-primary-container"
+  id="main-body">
+  <header class="fixed top-0 left-0 right-0 z-50 pt-10 dim-target">
+    <div class="flex justify-between items-center w-full px-10 max-w-[1440px] mx-auto">
+      <div class="glass-panel rounded-xl p-4 flex items-center gap-4">
+        <div
+          class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center border border-primary-container/30">
+          <span class="material-symbols-outlined text-primary-fixed-dim"
+            style="font-variation-settings:'FILL' 1;">notification_important</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-headline-md font-medium tracking-tight text-on-surface">Amanda</h1>
+            <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-primary/20 bg-primary/5">
+              <div
+                class="w-1.5 h-1.5 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(0,240,255,0.8)] animate-pulse">
+              </div>
+              <span class="text-[10px] font-label-md uppercase tracking-wider text-primary-fixed-dim"
+                id="voice-state-badge">Idle</span>
+            </div>
+          </div>
+          <p class="text-label-sm font-label-sm text-on-surface-variant opacity-60" id="voice-workspace">Voice •
+            CodedDevs Demo</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="glass-panel p-2 rounded-lg flex items-center gap-1">
+          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
+            href="/transcript"><span class="material-symbols-outlined text-[20px]">description</span></a>
+          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
+            href="/workspace"><span class="material-symbols-outlined text-[20px]">handyman</span></a>
+          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
+            href="/settings"><span class="material-symbols-outlined text-[20px]">settings</span></a>
+        </div>
+        <a class="glass-panel p-2 rounded-lg text-on-surface-variant hover:text-primary transition-colors"
+          href="/dashboard"><span class="material-symbols-outlined text-[20px]">minimize</span></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 relative flex flex-col items-center justify-center p-10">
+    <div class="absolute inset-0 pointer-events-none">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] orb-glow opacity-40">
+      </div>
+      <div
+        class="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-gradient-to-t from-primary/5 to-transparent blur-3xl">
+      </div>
+    </div>
+
+    <div
+      class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] z-0 transition-all duration-700"
+      id="particle-container"></div>
+
+    <div class="absolute bottom-[20%] text-center z-10 transition-transform duration-700" id="status-text">
+      <h2 class="text-display-lg font-display-lg text-primary tracking-tighter mb-2" id="voice-status-heading">Ready
+      </h2>
+      <p class="text-body-lg text-on-surface-variant/80 font-body-lg" id="voice-status-subline">Tell Amanda what you
+        want done</p>
+    </div>
+
+    <div class="mt-auto mb-40 flex gap-4 items-center overflow-hidden dim-target" id="voice-task-strip">
+      <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary-fixed-dim text-[16px]">hub</span>
+        <span class="text-label-sm font-label-sm text-on-surface-variant">Waiting for the next instruction...</span>
+      </div>
+    </div>
+  </main>
+
+  <div
+    class="absolute bottom-32 left-1/2 -translate-x-1/2 w-full max-w-3xl px-10 flex flex-col gap-6 pointer-events-none z-20"
+    id="voice-transcript-shell">
+    <div class="flex justify-end w-full">
+      <div class="max-w-[80%] px-6 py-4 rounded-2xl glass-panel bg-white/5 border-white/10 text-on-surface">
+        <p class="text-body-md font-body-md italic opacity-80" id="voice-user-text">"Check today's customer messages and
+          show me the important ones."</p>
+      </div>
+    </div>
+    <div class="flex justify-start w-full">
+      <div class="max-w-[80%] px-6 py-4 rounded-2xl glass-panel border-primary/20 bg-primary/5 text-primary">
+        <p class="text-body-md font-body-md font-medium" id="voice-assistant-text">"I'll review your customer messages,
+          identify urgent conversations, and prepare suggested replies."</p>
+      </div>
+    </div>
+  </div>
+
+  <nav
+    class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2 bg-surface-container-low/60 backdrop-blur-md border border-outline-variant/20 rounded-full shadow-[0_0_40px_rgba(0,240,255,0.1)] transition-transform duration-500">
+    <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
+      href="/dashboard"><span
+        class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform text-error/80">call_end</span><span
+        class="text-label-sm font-label-sm uppercase tracking-widest">End Session</span></a>
+    <button
+      class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
+      id="mute-btn" type="button"><span
+        class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform">mic_off</span><span
+        class="text-label-sm font-label-sm uppercase tracking-widest">Mute</span></button>
+    <button
+      class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-20 h-20 shadow-[0_0_30px_rgba(0,240,255,0.4)] scale-110 -mt-2 group transition-all duration-300"
+      id="mic-btn" type="button">
+      <span class="material-symbols-outlined text-[32px] font-bold" id="mic-icon"
+        style="font-variation-settings:'FILL' 1;">mic</span>
+      <div class="absolute inset-0 rounded-full border-2 border-white/20 animate-ping opacity-20"></div>
+    </button>
+    <button
+      class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
+      id="transcript-btn" type="button"><span
+        class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform">receipt_long</span><span
+        class="text-label-sm font-label-sm uppercase tracking-widest">Transcripts</span></button>
+    <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
+      href="/settings"><span
+        class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform">keyboard</span><span
+        class="text-label-sm font-label-sm uppercase tracking-widest">Keyboard</span></a>
+  </nav>
+
+  <div
+    class="fixed left-10 top-1/2 -translate-y-1/2 flex flex-col gap-8 items-center py-8 glass-panel rounded-full w-12 opacity-40 dim-target">
+    <div class="w-1 h-1 bg-primary rounded-full"></div>
+    <div class="w-1 h-20 bg-gradient-to-b from-primary/40 to-transparent rounded-full"></div>
+    <div class="w-1 h-1 bg-primary rounded-full"></div>
+  </div>
+  <div
+    class="fixed right-10 top-1/2 -translate-y-1/2 flex flex-col gap-8 items-center py-8 glass-panel rounded-full w-12 opacity-40 dim-target">
+    <div class="w-1 h-1 bg-primary rounded-full"></div>
+    <div class="w-1 h-20 bg-gradient-to-b from-transparent to-primary/40 rounded-full"></div>
+    <div class="w-1 h-1 bg-primary rounded-full"></div>
+  </div>
+
+  <aside class="hidden fixed right-10 top-28 z-50 w-[360px] max-h-[calc(100vh-9rem)] overflow-auto space-y-3"
+    id="voice-transcript-drawer">
+    <div class="glass-panel rounded-xl p-4 flex items-center justify-between">
+      <div>
+        <p class="text-xs uppercase tracking-[0.18em] text-primary-fixed-dim">Session Transcript</p>
+        <h2 class="text-lg text-on-surface">Live History</h2>
+      </div>
+      <button class="glass-panel rounded-lg p-2 text-on-surface-variant hover:text-primary transition-colors"
+        id="voice-close-transcript" type="button">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="space-y-3" id="voice-transcript-list"></div>
+  </aside>
+
+  <aside class="hidden fixed left-10 bottom-40 z-50 w-[400px] max-h-[calc(100vh-12rem)] overflow-auto"
+    id="voice-debug-panel">
+    <div class="glass-panel rounded-xl p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.18em] text-primary-fixed-dim">Debug Panel</p>
+          <h2 class="text-sm text-on-surface font-medium">Voice Request Trace</h2>
+        </div>
+        <button
+          class="glass-panel rounded-lg p-1 text-on-surface-variant hover:text-primary transition-colors text-[14px]"
+          id="voice-debug-close" type="button">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <button
+        class="w-full glass-panel rounded-lg px-3 py-2 text-xs text-primary hover:bg-primary/10 transition-colors"
+        id="voice-debug-copy" type="button">
+        Copy Debug JSON
+      </button>
+
+      <div class="space-y-2 text-xs font-label-sm">
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Request ID:</span>
+          <span class="text-primary ml-1" id="debug-request-id">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Raw Transcript:</span>
+          <div class="text-on-surface/80 mt-1 break-words" id="debug-raw-transcript">—</div>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Cleaned Transcript:</span>
+          <div class="text-on-surface/80 mt-1 break-words" id="debug-cleaned-transcript">—</div>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Last Sent Time:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-last-sent-time">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Voice State:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-voice-state">idle</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Final Result:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-final-result">false</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Recognition Count:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-recognition-count">0</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Duplicate Blocked:</span>
+          <span class="text-warning ml-1" id="debug-duplicate-blocked">false</span>
+        </div>
+
+        <hr class="border-white/10" />
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Intent:</span>
+          <span class="text-primary ml-1" id="debug-intent">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Confidence:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-confidence">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Routed To:</span>
+          <span class="text-primary ml-1" id="debug-routed-to">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Brain:</span>
+          <span class="text-primary ml-1" id="debug-brain">â€”</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Safety:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-safety-decision">â€”</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Used Follow-up Context:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-used-followup">false</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Pending Clarification:</span>
+          <div class="text-on-surface/80 mt-1" id="debug-pending-clarification">—</div>
+        </div>
+
+        <hr class="border-white/10" />
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Calendar Parser:</span>
+          <div class="text-on-surface/80 mt-1 text-[10px]" id="debug-calendar-parser">—</div>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Gmail Debug:</span>
+          <div class="text-on-surface/80 mt-1 text-[10px]" id="debug-gmail">—</div>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Approval Action:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-approval-action">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Approval ID:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-approval-id">—</span>
+        </div>
+
+        <hr class="border-white/10" />
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Backend Reply:</span>
+          <div class="text-on-surface/80 mt-1 break-words italic" id="debug-backend-reply">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <button
+    class="hidden fixed left-10 bottom-10 z-50 px-3 py-2 text-xs font-label-sm rounded bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 transition-colors"
+    id="voice-debug-toggle" type="button">Debug</button>
+
+  <script src="/src/voice-client.js?v=voice-reply-fix-1" type="module"></script>
+</body>
+
+</html>

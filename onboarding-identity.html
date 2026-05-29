@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.cdnfonts.com/css/geist" rel="stylesheet" />
+    <script src="/src/onboarding-tailwind.js"></script>
+    <style>
+      body { background-color: #050505; color: #e5e2e1; overflow-x: hidden; }
+      .glass-panel { background: rgba(10, 10, 10, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.08); }
+      .glass-panel-raised { background: rgba(15,15,15,.8); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.1); }
+      .cyan-glow { box-shadow: 0 0 32px rgba(0,240,255,.15); }
+      .primary-button-glow:hover { box-shadow: 0 0 10px rgba(0,240,255,.8); }
+      .particle-core { background: radial-gradient(circle, rgba(125,244,255,.3) 0%, rgba(0,219,233,.1) 50%, transparent 100%); }
+      .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24; }
+    </style>
+  </head>
+  <body class="font-body-md text-on-surface">
+    <nav class="fixed top-0 w-full z-50 bg-surface/70 backdrop-blur-xl border-b border-white/10">
+      <div class="flex justify-between items-center px-margin-desktop py-4 max-w-container-max mx-auto">
+        <a href="/" class="font-display-lg text-display-lg font-semibold tracking-tighter text-on-surface">Amanda</a>
+        <div class="hidden md:flex items-center gap-8">
+          <a class="text-on-surface-variant font-body-md text-body-md hover:text-primary-fixed transition-colors" href="/">Product</a>
+          <a class="text-on-surface-variant font-body-md text-body-md hover:text-primary-fixed transition-colors" href="/voice">Live Voice</a>
+          <button class="bg-primary-container text-on-primary-container px-6 py-2 rounded-lg font-label-md text-label-md primary-button-glow transition-all active:scale-95">Login</button>
+        </div>
+      </div>
+    </nav>
+    <aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest/80 backdrop-blur-2xl border-r border-white/5 shadow-2xl flex flex-col py-8 px-4 z-40">
+      <div class="mb-12 px-4">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-full bg-primary-fixed/20 flex items-center justify-center"><span class="material-symbols-outlined text-primary-fixed">blur_on</span></div>
+          <div><h2 class="font-display-lg text-label-md text-primary-fixed font-bold">Onboarding</h2><p class="font-label-sm text-label-sm text-on-surface-variant/60">Amanda AI Integration</p></div>
+        </div>
+      </div>
+      <nav class="space-y-2">
+        <a href="/onboarding-identity.html" class="flex items-center gap-3 bg-primary-fixed/10 text-primary-fixed rounded-lg px-4 py-3 border-l-2 border-primary-fixed"><span class="material-symbols-outlined">person</span><span class="font-label-md text-label-md">Identity</span></a>
+        <a href="/onboarding-specialization.html" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-white/5 transition-all hover:translate-x-1"><span class="material-symbols-outlined">psychology</span><span class="font-label-md text-label-md">Specialization</span></a>
+        <a href="/onboarding-knowledge.html" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-white/5 transition-all hover:translate-x-1"><span class="material-symbols-outlined">grid_view</span><span class="font-label-md text-label-md">Workspace</span></a>
+        <div class="flex items-center gap-3 text-on-surface-variant px-4 py-3"><span class="material-symbols-outlined">verified</span><span class="font-label-md text-label-md">Review</span></div>
+      </nav>
+      <div class="mt-auto px-4 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden"><img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTgFIJLbRQ0Dojf5zM0fxYIr7tBTSHy9kDPXFu3iipSGfVb03zg6DBXgP63iSAFYoSKNNTM8P_S2CxtPE2hIXXPzvw_tofdCro18Zm75TueWK1nhklTGH7npJNVc4PHzDbaqoXXZT7el72GMtudytbSi7v7PiaqYbB66Z4ajXBqux_q_BFlPk45aLYqKFiLK_JJxSSTfjYs0AYiX6sKggb2UsC3Q997N2UUzArgSUWMYGMPacmDg02J6ZEyX7Y73Umy8-Cd9OH" /></div>
+        <div><p class="font-label-sm text-label-sm text-on-surface">Alex Rivera</p><p class="font-label-sm text-[10px] text-on-surface-variant/40">ADMINISTRATOR</p></div>
+      </div>
+    </aside>
+    <main class="pl-64 pt-20 min-h-screen flex items-center justify-center relative overflow-hidden">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-20 pointer-events-none"><div class="absolute inset-0 particle-core rounded-full"></div></div>
+      <div class="w-full max-w-2xl px-margin-desktop relative z-10">
+        <div class="glass-panel-raised rounded-xl p-10 cyan-glow">
+          <div class="flex flex-col items-center mb-8">
+            <div class="relative w-24 h-24 flex items-center justify-center mb-6">
+              <div class="absolute inset-0 rounded-full bg-primary-fixed/5 border border-primary-fixed/20 animate-pulse"></div>
+              <div class="relative z-10 w-12 h-12 rounded-full particle-core flex items-center justify-center border border-primary-fixed/40"><span class="material-symbols-outlined text-primary-fixed text-3xl" style="font-variation-settings:'FILL' 1;">flare</span></div>
+            </div>
+            <div class="text-center">
+              <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary-fixed/5 border border-primary-fixed/20 rounded-full mb-4"><span class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_8px_#00F0FF]"></span><span class="font-label-sm text-label-sm text-primary-fixed uppercase tracking-widest">Initialization Phase</span></div>
+              <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Identify your AI</h1>
+              <p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto">Define the identity and behavioral core of your new autonomous worker.</p>
+            </div>
+          </div>
+          <div class="space-y-8">
+            <div>
+              <label class="block font-label-md text-label-md text-on-surface-variant mb-3 uppercase tracking-tighter">Designation Name</label>
+              <div class="relative"><input class="w-full bg-surface-container-lowest/50 border-b border-white/10 px-0 py-4 font-headline-md text-headline-md text-primary-fixed placeholder:text-on-surface-variant/20 focus:outline-none focus:border-primary-fixed transition-all" placeholder="e.g. Amanda" type="text" /><div class="absolute right-0 bottom-4"><span class="material-symbols-outlined text-on-surface-variant/40">fingerprint</span></div></div>
+            </div>
+            <div>
+              <label class="block font-label-md text-label-md text-on-surface-variant mb-4 uppercase tracking-tighter">Core Personality Matrix</label>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button class="flex flex-col items-start p-4 rounded-lg border border-white/5 bg-white/5 hover:border-primary-fixed/50 hover:bg-primary-fixed/5 transition-all text-left group"><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary-fixed mb-3">analytics</span><span class="font-label-md text-label-md text-on-surface mb-1">Analytical</span><span class="font-label-sm text-[11px] text-on-surface-variant/60 leading-relaxed">Logic-driven, precise data processing.</span></button>
+                <button class="flex flex-col items-start p-4 rounded-lg border border-primary-fixed/40 bg-primary-fixed/10 transition-all text-left group relative"><div class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-primary-fixed shadow-[0_0_5px_#00F0FF]"></div><span class="material-symbols-outlined text-primary-fixed mb-3">auto_awesome</span><span class="font-label-md text-label-md text-on-surface mb-1">Creative</span><span class="font-label-sm text-[11px] text-on-surface-variant/60 leading-relaxed">Explorative, synthesis-focused.</span></button>
+                <button class="flex flex-col items-start p-4 rounded-lg border border-white/5 bg-white/5 hover:border-primary-fixed/50 hover:bg-primary-fixed/5 transition-all text-left group"><span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary-fixed mb-3">bolt</span><span class="font-label-md text-label-md text-on-surface mb-1">Proactive</span><span class="font-label-sm text-[11px] text-on-surface-variant/60 leading-relaxed">Anticipatory, action-oriented.</span></button>
+              </div>
+            </div>
+            <div class="pt-6 flex justify-between items-center">
+              <button class="text-on-surface-variant font-label-md text-label-md hover:text-on-surface transition-colors">Save Draft</button>
+              <a href="/onboarding-specialization.html" class="bg-primary-fixed text-on-primary-fixed px-10 py-4 rounded-lg font-label-md text-label-md primary-button-glow transition-all active:scale-95 flex items-center gap-2">Initialize Core <span class="material-symbols-outlined text-sm">arrow_forward</span></a>
+            </div>
+          </div>
+        </div>
+        <div class="mt-12 flex justify-center gap-4"><div class="h-1 w-12 bg-primary-fixed rounded-full"></div><div class="h-1 w-12 bg-surface-container-highest rounded-full"></div><div class="h-1 w-12 bg-surface-container-highest rounded-full"></div><div class="h-1 w-12 bg-surface-container-highest rounded-full"></div></div>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Amanda | Workspace &amp; AI Operations</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="/src/styles.css?v=ui-consistency-1" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
+    <script id="tailwind-config">
+      tailwind.config = { darkMode: "class", theme: { extend: { colors: { "secondary-container": "#026bd2", "on-primary-container": "#006970", "surface-container": "#201f1f", "inverse-surface": "#e5e2e1", "on-tertiary-container": "#516073", "on-surface-variant": "#b9cacb", "surface-container-high": "#2a2a2a", "surface-tint": "#00dbe9", surface: "#131313", "primary-container": "#00f0ff", primary: "#dbfcff", "secondary-fixed": "#d6e3ff", "on-secondary-fixed": "#001b3e", "surface-dim": "#131313", tertiary: "#f2f6ff", "on-secondary-fixed-variant": "#00468c", "on-error": "#690005", background: "#050505", "on-tertiary-fixed": "#0d1c2d", "outline-variant": "rgba(255, 255, 255, 0.08)", "surface-container-low": "#1c1b1b", "tertiary-container": "#ccdbf1", "secondary-fixed-dim": "#a9c7ff", "on-primary": "#00363a", "tertiary-fixed-dim": "#b9c8de", "surface-container-highest": "#353534", outline: "#849495", "on-tertiary-fixed-variant": "#39485a", "on-secondary-container": "#ebf0ff", "surface-variant": "#353534", "on-tertiary": "#233143", "inverse-on-surface": "#313030", "on-secondary": "#003064", "inverse-primary": "#006970", "surface-bright": "#3a3939", "primary-fixed": "#7df4ff", "on-background": "#e5e2e1", "surface-container-lowest": "#0e0e0e", "primary-fixed-dim": "#00dbe9", secondary: "#a9c7ff", "on-error-container": "#ffdad6", "on-surface": "#e5e2e1", "on-primary-fixed-variant": "#004f54", error: "#ffb4ab", "tertiary-fixed": "#d4e4fa", "on-primary-fixed": "#002022", "error-container": "#93000a" }, borderRadius: { DEFAULT: "0.25rem", lg: "1rem", xl: "1.5rem", full: "9999px" }, spacing: { "margin-mobile": "16px", "margin-desktop": "40px", unit: "8px", gutter: "24px", "container-max": "1440px" }, fontFamily: { "display-lg": ["Geist"], "body-lg": ["Geist"], "headline-lg": ["Geist"], "body-md": ["Geist"], "headline-md": ["Geist"], "label-sm": ["JetBrains Mono"], "label-md": ["JetBrains Mono"], "headline-lg-mobile": ["Geist"] }, fontSize: { "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.04em", fontWeight: "600" }], "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }], "headline-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "500" }], "body-md": ["16px", { lineHeight: "1.6", fontWeight: "400" }], "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "500" }], "label-sm": ["12px", { lineHeight: "1.0", letterSpacing: "0.05em", fontWeight: "400" }], "label-md": ["14px", { lineHeight: "1.0", letterSpacing: "0.05em", fontWeight: "500" }], "headline-lg-mobile": ["24px", { lineHeight: "1.2", letterSpacing: "-0.01em", fontWeight: "500" }] } } } };
+    </script>
+    <style>
+      body { background-color: #050505; color: #e5e2e1; font-family: "Geist", sans-serif; }
+      .glass-panel { background: rgba(10,10,10,.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.08); }
+      .glass-panel:hover { border-top-color: rgba(255,255,255,.2); }
+      .ai-glow { box-shadow: 0 0 32px rgba(0,240,255,.15); }
+      .pulse-dot { animation: pulse 2s infinite ease-in-out; }
+      @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(1.2); } }
+      .status-pill { background: rgba(0,240,255,.1); border: 1px solid rgba(0,240,255,.2); }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-transparent pt-margin-desktop">
+      <div class="flex justify-between items-center w-full px-margin-desktop max-w-container-max mx-auto">
+        <a class="text-headline-md font-headline-md font-medium tracking-tight text-on-surface" href="/">Amanda</a>
+        <nav class="hidden md:flex items-center gap-10">
+          <a class="text-on-surface-variant font-medium text-label-md font-label-md hover:text-primary transition-colors duration-300" href="/voice">Voice</a>
+          <a class="text-primary-fixed-dim font-bold text-label-md font-label-md hover:text-primary transition-colors duration-300" href="/workspace">Workspace</a>
+        </nav>
+        <div class="flex items-center gap-4">
+          <a class="text-on-surface-variant hover:text-primary transition-colors duration-300" href="/transcript"><span class="material-symbols-outlined">search</span></a>
+          <a class="text-on-surface-variant hover:text-primary transition-colors duration-300" href="/settings"><span class="material-symbols-outlined">settings</span></a>
+          <a class="text-on-surface-variant hover:text-primary transition-colors duration-300" href="/workspace"><span class="material-symbols-outlined">handyman</span></a>
+          <div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant"><img alt="Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD77_9a9zRCXQjJ10Ke5BfkMp2nRgFYng13SHQg4uQAccLP0qsQjzsJtMbNBuz1x8G_XP3-rwL06CmuOcoumLAL-qZqCsw_hCGLjj4YlulWL7KCQJVy8BENC43QtHSARvuhLwVbC8LCLoYzSV-fiuVbYcJuwYA0emkdkUx4Fa2SSF19m5j_doc2HEPFsuFOElcqIJl1oEUu50nYnb44OI4eega6zr5s4ceaEh1-cumc2mxtUPQYR6Fcwvn5eoFs2DxH6LzuzuX7" /></div>
+        </div>
+      </div>
+    </header>
+    <main class="flex-grow pt-32 pb-40 px-margin-desktop max-w-container-max mx-auto w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter mb-12">
+        <div class="lg:col-span-8 glass-panel rounded-xl p-8 flex flex-col justify-between relative overflow-hidden">
+          <div class="relative z-10"><div class="inline-flex items-center gap-2 status-pill px-3 py-1 rounded-full mb-4"><span class="w-2 h-2 bg-primary-container rounded-full pulse-dot"></span><span class="text-label-sm font-label-sm text-primary-container uppercase tracking-widest">System Active</span></div><h1 class="text-display-lg font-display-lg text-primary mb-2" id="workspace-heading">Workspace Overview</h1><p class="text-body-lg font-body-lg text-on-surface-variant max-w-md" id="workspace-subcopy">Amanda is currently managing 3 operational streams across Shopify, Salesforce, and Intercom.</p></div>
+          <div class="absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center opacity-40"><img class="w-full h-full object-cover mix-blend-screen" alt="AI Core" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANF1wz82WcGbpXm1o7CrK2EddGB5_eQ465XbOAir_05xNrR5wLufcGSFG7H2nArlwT74ilCFbF9Kbv416kB5svY90tm17HQ6va1lLh7NzPq_6fmYS8mYs5b5MK3VoxpC4kfXhcrhXs3j9V1UGX0wPu7RBTj6E7aIfl457I6Sdw3Cui_RFH_36WLBc-648mqHEQxdKyHDeOC9nZaAqOXMTEkhfMKcTgI8TCun_3Teghk5fDiZAUorl2HSqazd-c8Z4FYhxHTC4-" /></div>
+          <div class="inline-actions mt-12 z-10"><button class="btn btn-primary"><span class="material-symbols-outlined">add</span> Deploy New Agent</button><a class="btn btn-secondary" href="/dashboard">View Analytics</a></div>
+        </div>
+        <div class="lg:col-span-4 flex flex-col gap-gutter">
+          <div class="glass-panel rounded-xl p-6 flex-grow"><div class="flex items-center justify-between mb-4"><span class="text-label-md font-label-md text-on-surface-variant uppercase">Tasks Completed</span><span class="material-symbols-outlined text-primary">check_circle</span></div><div class="text-display-lg font-display-lg text-white" id="workspace-task-total">1,284</div><div class="text-label-sm font-label-sm text-primary-container mt-1" id="workspace-task-delta">+12% from last week</div></div>
+          <div class="glass-panel rounded-xl p-6 flex-grow"><div class="flex items-center justify-between mb-4"><span class="text-label-md font-label-md text-on-surface-variant uppercase">Live Stream</span><span class="material-symbols-outlined text-error">sensors</span></div><div class="space-y-3"><div class="flex items-center gap-3"><div class="w-1 h-8 bg-primary-container rounded-full"></div><div><p class="text-label-md font-label-md text-on-surface" id="workspace-live-status">Syncing CRM</p><p class="text-label-sm font-label-sm text-on-surface-variant">Real-time update</p></div></div><div class="flex items-center gap-3"><div class="w-1 h-8 bg-outline-variant rounded-full"></div><div><p class="text-label-md font-label-md text-on-surface-variant">Queue Empty</p><p class="text-label-sm font-label-sm text-on-surface-variant/50">Next: 14:00 PST</p></div></div></div></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+        <div class="glass-panel rounded-xl overflow-hidden"><div class="px-8 py-6 border-b border-outline-variant flex items-center justify-between bg-white/5"><h2 class="text-headline-md font-headline-md text-white">Live Activity</h2><a class="text-label-md font-label-md text-primary-fixed-dim hover:underline" href="/transcript">History</a></div><div class="p-4"><table class="w-full text-left"><thead><tr class="text-label-sm font-label-sm text-on-surface-variant border-b border-outline-variant/10"><th class="px-4 py-3">Task Description</th><th class="px-4 py-3">Source</th><th class="px-4 py-3 text-right">Status</th></tr></thead><tbody class="text-body-md font-body-md" id="live-activity-body"><tr class="hover:bg-white/5 transition-colors group"><td class="px-4 py-4 text-on-surface">Drafting reply to Order #1234</td><td class="px-4 py-4 text-on-surface-variant">Shopify</td><td class="px-4 py-4 text-right"><span class="text-label-sm font-label-sm text-primary px-2 py-1 rounded bg-primary/10">Thinking...</span></td></tr></tbody></table></div></div>
+        <div class="glass-panel rounded-xl overflow-hidden"><div class="px-8 py-6 border-b border-outline-variant flex items-center justify-between bg-white/5"><h2 class="text-headline-md font-headline-md text-white">Integrations</h2><button class="material-symbols-outlined text-on-surface-variant hover:text-white">more_vert</button></div><div class="p-8 grid grid-cols-2 gap-4" id="integrations-grid"><div class="p-6 rounded-lg bg-white/5 border border-outline-variant hover:border-primary-container transition-all group"><div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded bg-[#95BF47]/20 flex items-center justify-center text-[#95BF47]"><span class="material-symbols-outlined">shopping_cart</span></div><div><h3 class="text-label-md font-label-md text-white">Shopify</h3><p class="text-[10px] text-primary uppercase font-bold tracking-tighter">Connected</p></div></div><p class="text-label-sm font-label-sm text-on-surface-variant mb-4">Managing orders &amp; inventory sync.</p><div class="flex justify-between items-center text-label-sm font-label-sm"><span class="text-on-surface-variant">99.9% uptime</span><span class="material-symbols-outlined text-on-surface-variant group-hover:translate-x-1 transition-transform">arrow_forward</span></div></div></div></div>
+      </div>
+    </main>
+    <footer class="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-4 py-2 bg-surface/70 backdrop-blur-xl border border-white/10 rounded-full shadow-[0_0_40px_rgba(0,240,255,0.1)]">
+      <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all" href="/dashboard"><span class="material-symbols-outlined">call_end</span><span class="text-label-sm font-label-sm mt-1">Dashboard</span></a>
+      <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group" href="/workspace"><span class="material-symbols-outlined">handyman</span><span class="text-label-sm font-label-sm mt-1">Workspace</span></a>
+      <a class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-14 h-14 shadow-[0_0_20px_rgba(0,240,255,0.4)] scale-110" href="/voice"><span class="material-symbols-outlined">mic</span><span class="sr-only">Listen</span></a>
+      <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all" href="/transcript"><span class="material-symbols-outlined">receipt_long</span><span class="text-label-sm font-label-sm mt-1">Transcripts</span></a>
+      <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all" href="/settings"><span class="material-symbols-outlined">keyboard</span><span class="text-label-sm font-label-sm mt-1">Settings</span></a>
+    </footer>
+    <script src="/src/workspace-client.js" type="module"></script>
+  </body>
+</html>

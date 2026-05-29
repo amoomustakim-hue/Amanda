@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.cdnfonts.com/css/geist" rel="stylesheet" />
+    <script src="/src/onboarding-tailwind.js"></script>
+    <style>
+      body { background-color: #050505; color: #e5e2e1; -webkit-font-smoothing: antialiased; }
+      .glass-panel { background: rgba(10,10,10,.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.08); }
+      .glass-panel:hover { border-top: 1px solid rgba(0,240,255,.3); box-shadow: 0 0 32px rgba(0,240,255,.05); }
+      .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 200, "GRAD" 0, "opsz" 24; }
+      .active-dot { box-shadow: 0 0 8px #00f0ff; }
+      .primary-glow:hover { box-shadow: 0 0 10px #00f0ff; }
+    </style>
+  </head>
+  <body class="bg-surface-container-lowest overflow-hidden">
+    <aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest/80 backdrop-blur-2xl border-r border-white/5 shadow-2xl flex flex-col py-8 px-4 z-40">
+      <div class="mb-12 px-4">
+        <a href="/" class="font-display-lg text-display-lg text-primary-fixed mb-1 block">Amanda</a>
+        <div class="flex flex-col"><span class="font-label-md text-label-md text-on-surface">Onboarding</span><span class="font-label-sm text-label-sm text-on-surface-variant/60 uppercase">Amanda AI Integration</span></div>
+      </div>
+      <nav class="flex-1 space-y-2">
+        <a href="/onboarding-identity.html" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-white/5 transition-all group"><span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">person</span><span class="font-label-md text-label-md">Identity</span></a>
+        <a href="/onboarding-specialization.html" class="flex items-center gap-3 bg-primary-fixed/10 text-primary-fixed rounded-lg px-4 py-3 border-l-2 border-primary-fixed"><span class="material-symbols-outlined text-xl" style="font-variation-settings:'FILL' 1;">psychology</span><span class="font-label-md text-label-md">Specialization</span></a>
+        <a href="/onboarding-knowledge.html" class="flex items-center gap-3 text-on-surface-variant px-4 py-3 hover:bg-white/5 transition-all group"><span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">grid_view</span><span class="font-label-md text-label-md">Workspace</span></a>
+        <div class="flex items-center gap-3 text-on-surface-variant px-4 py-3"><span class="material-symbols-outlined text-xl">verified</span><span class="font-label-md text-label-md">Review</span></div>
+      </nav>
+      <div class="mt-auto px-4 flex items-center gap-3 border-t border-white/5 pt-6">
+        <div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-white/10"><img alt="User Profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb6cKcy-WaFrO5H-94Yzi8xw4UcKnRj5cwWDQw9BAQtzw9ONyiroqXA0Xq_YRuId4Pdg3W-EiiOWHePYmbIUgaQYXDt6U13AaRNa_lSXbDTn70IM_mXFIcgcKZxkOQ4aA5jELwlnN96MbWrmW3Yzc_HN1rOix5Xu5HsCGIN6s1-SsiHR_UIrG7Yt4os2Opk5K6knb6n0CgciDK-qd7aQ4FxBQvv7vuecUtapCYo_TtYW3BGGz8CAUn_WqD19uqN_0UhSUvJCsa" /></div>
+        <div class="flex flex-col"><span class="font-label-md text-label-md text-on-surface">Alex Rivera</span><span class="font-label-sm text-label-sm text-on-surface-variant/60">Operations Lead</span></div>
+      </div>
+    </aside>
+    <main class="ml-64 min-h-screen overflow-y-auto px-margin-desktop pt-24 pb-12">
+      <div class="max-w-4xl mx-auto">
+        <header class="mb-12 text-center md:text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1 glass-panel rounded-full mb-6"><span class="w-2 h-2 rounded-full bg-primary-fixed active-dot"></span><span class="font-label-sm text-label-sm uppercase tracking-widest text-primary-fixed">Step 02 - Configuration</span></div>
+          <h2 class="font-headline-lg text-headline-lg text-on-surface mb-4">Select Operational Specialization</h2>
+          <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Define the primary ecosystems Amanda should monitor and optimize. Each specialization enables custom AI logic tailored to specific platform requirements.</p>
+        </header>
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+          <button class="glass-panel text-left p-8 rounded-xl transition-all duration-300 group relative overflow-hidden active:scale-95"><div class="mb-6 flex justify-between items-start"><span class="material-symbols-outlined text-4xl text-primary-fixed/80 group-hover:text-primary-fixed transition-colors">shopping_cart</span><span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span></div><h3 class="font-headline-md text-headline-md text-on-surface mb-2">Shopify Orders</h3><p class="font-body-md text-body-md text-on-surface-variant/80 mb-4">Automate inventory tracking, fraud detection, and multi-channel fulfillment orchestration.</p><div class="flex flex-wrap gap-2"><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Logistics</span><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Sales</span></div></button>
+          <button class="glass-panel text-left p-8 rounded-xl transition-all duration-300 group relative overflow-hidden active:scale-95"><div class="mb-6 flex justify-between items-start"><span class="material-symbols-outlined text-4xl text-primary-fixed/80 group-hover:text-primary-fixed transition-colors">hub</span><span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span></div><h3 class="font-headline-md text-headline-md text-on-surface mb-2">Salesforce Leads</h3><p class="font-body-md text-body-md text-on-surface-variant/80 mb-4">Intelligent lead scoring, triage, and automated outreach based on behavioral triggers.</p><div class="flex flex-wrap gap-2"><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">CRM</span><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Growth</span></div></button>
+          <button class="glass-panel text-left p-8 rounded-xl transition-all duration-300 group relative overflow-hidden active:scale-95"><div class="mb-6 flex justify-between items-start"><span class="material-symbols-outlined text-4xl text-primary-fixed/80 group-hover:text-primary-fixed transition-colors">forum</span><span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span></div><h3 class="font-headline-md text-headline-md text-on-surface mb-2">Intercom Support</h3><p class="font-body-md text-body-md text-on-surface-variant/80 mb-4">Autonomous customer resolution, sentiment analysis, and ticket prioritization.</p><div class="flex flex-wrap gap-2"><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Support</span><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Voice</span></div></button>
+          <button class="glass-panel text-left p-8 rounded-xl transition-all duration-300 group relative overflow-hidden active:scale-95"><div class="mb-6 flex justify-between items-start"><span class="material-symbols-outlined text-4xl text-primary-fixed/80 group-hover:text-primary-fixed transition-colors">confirmation_number</span><span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span></div><h3 class="font-headline-md text-headline-md text-on-surface mb-2">Zendesk Tickets</h3><p class="font-body-md text-body-md text-on-surface-variant/80 mb-4">High-volume ticket routing and historical data synthesis for rapid problem solving.</p><div class="flex flex-wrap gap-2"><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Success</span></div></button>
+          <button class="glass-panel text-left p-8 rounded-xl transition-all duration-300 group relative overflow-hidden active:scale-95"><div class="mb-6 flex justify-between items-start"><span class="material-symbols-outlined text-4xl text-primary-fixed/80 group-hover:text-primary-fixed transition-colors">payments</span><span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">add_circle</span></div><h3 class="font-headline-md text-headline-md text-on-surface mb-2">Stripe Revenue</h3><p class="font-body-md text-body-md text-on-surface-variant/80 mb-4">Dunning automation, churn prediction, and sophisticated payment reconciliation.</p><div class="flex flex-wrap gap-2"><span class="font-label-sm text-label-sm bg-white/5 border border-white/10 px-2 py-1 rounded text-on-surface-variant">Finance</span></div></button>
+          <button class="border-2 border-dashed border-white/10 text-left p-8 rounded-xl transition-all duration-300 group relative overflow-hidden hover:border-primary-fixed/30 hover:bg-white/5 active:scale-95"><div class="mb-6"><span class="material-symbols-outlined text-4xl text-on-surface-variant/40 group-hover:text-on-surface transition-colors">bolt</span></div><h3 class="font-headline-md text-headline-md text-on-surface mb-2">Custom Stream</h3><p class="font-body-md text-body-md text-on-surface-variant/60 mb-4">Connect via API or Webhook to any proprietary operational database.</p><div class="flex items-center gap-2 text-primary-fixed"><span class="font-label-md text-label-md">Configure API</span><span class="material-symbols-outlined text-sm">arrow_forward</span></div></button>
+        </section>
+        <footer class="mt-16 flex flex-col md:flex-row items-center justify-between gap-6 pt-12 border-t border-white/5">
+          <div class="flex items-center gap-4"><a href="/onboarding-identity.html" class="px-6 py-3 border border-white/10 rounded-lg font-label-md text-label-md text-on-surface hover:bg-white/5 transition-colors">Back to Identity</a><p class="font-label-sm text-label-sm text-on-surface-variant/40 uppercase tracking-widest hidden md:block">Selection required to proceed</p></div>
+          <a href="/onboarding-knowledge.html" class="w-full md:w-auto px-8 py-4 bg-primary-container text-on-primary-fixed font-label-md text-label-md uppercase tracking-widest rounded-lg primary-glow transition-all active:scale-95 text-center">Initialize Specialization</a>
+        </footer>
+      </div>
+    </main>
+  </body>
+</html>
