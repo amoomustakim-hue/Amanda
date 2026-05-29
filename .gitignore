@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Keep env example trackable
+!.env.example
+
+# Runtime database / local app data
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.out/
+.next/
+.vercel/
+coverage/
+
+# Cache
+.cache/
+.parcel-cache/
+.turbo/
+.eslintcache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local test/temp files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Secrets / credentials
+credentials.json
+token.json
+secrets.json
+service-account.json
+*.pem
+*.key
+*.crt
+
+# Optional local screenshots/debug artifacts
+screenshots/
+debug/
