@@ -27,12 +27,20 @@ function formatHumanTime(hour, minute) {
   }).format(date);
 }
 
+function timeRegex() {
+  return /\b(?:at|by|for)?\s*(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)(?=$|\s|[.,!?])/i;
+}
+
+function normalizePeriod(value) {
+  return String(value || "").toLowerCase().replace(/[\s.]/g, "");
+}
+
 function cleanTitle(value) {
   return String(value || "")
     .replace(/\b(schedule|book|create|set|calendar|event|appointment)\b/gi, " ")
     .replace(/\b(make it|change it|move it|set it|change the location to|location to)\b/gi, " ")
     .replace(/\b(tomorrow|today|next\s+\w+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, " ")
-    .replace(/\b(at|by)\s+\d{1,2}(:\d{2})?\s*(am|pm)?\b/gi, " ")
+    .replace(/\b(at|by)?\s*\d{1,2}(:\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?\b/gi, " ")
     .replace(/\b(for)\s+\d+\s+(hour|hours|minute|minutes)\b/gi, " ")
     .replace(/\b(at|in|on)\s+.+$/i, " ")
     .replace(/\s+/g, " ")
@@ -83,7 +91,7 @@ function parseDate(message, now) {
 
 function parseTime(message) {
   const lower = message.toLowerCase();
-  const match = lower.match(/\b(?:at|by)?\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/);
+  const match = lower.match(timeRegex());
   if (!match) {
     if (/\bmorning\b/.test(lower)) return { found: true, hour: 9, minute: 0 };
     if (/\bafternoon\b/.test(lower)) return { found: true, hour: 14, minute: 0 };
@@ -92,9 +100,17 @@ function parseTime(message) {
   }
   let hour = Number(match[1]);
   const minute = Number(match[2] || 0);
-  if (match[3] === "pm" && hour < 12) hour += 12;
-  if (match[3] === "am" && hour === 12) hour = 0;
-  return { found: true, hour, minute };
+  const period = normalizePeriod(match[3]);
+  if (period === "pm" && hour < 12) hour += 12;
+  if (period === "am" && hour === 12) hour = 0;
+  return {
+    found: true,
+    hour,
+    minute,
+    normalizedTime: formatHumanTime(hour, minute),
+    period,
+    timeText: match[0].trim(),
+  };
 }
 
 function parseDurationMinutes(message) {
@@ -112,7 +128,7 @@ function parseDurationMinutes(message) {
 }
 
 function parseLocation(message) {
-  const withoutTimes = message.replace(/\b(?:at|by)\s+\d{1,2}(:\d{2})?\s*(am|pm)\b/gi, " ");
+  const withoutTimes = message.replace(timeRegex(), " ");
   const directPatterns = [
     /\b(?:the\s+)?location\s+is\s+at\s+(.+?)$/i,
     /\b(?:the\s+)?location\s+is\s+(.+?)$/i,
@@ -189,6 +205,7 @@ export function parseCalendarEventRequest(message, options = {}) {
     missingFields,
     start: formatOffsetIso(date.date, time.hour, time.minute),
     timeLabel: time.found ? formatHumanTime(time.hour, time.minute) : "",
+    timeText: time.timeText || "",
     timeZone,
     title,
   };
@@ -261,6 +278,10 @@ export function parseCalendarFollowUp(message, options = {}) {
   if (location) result.location = location;
   if (date.found) result.dateLabel = date.label || "";
   if (time.found) result.timeLabel = formatHumanTime(time.hour, time.minute);
+  if (time.found) {
+    result.normalizedTime = time.normalizedTime || formatHumanTime(time.hour, time.minute);
+    result.timeText = time.timeText || "";
+  }
   if (explicitDuration) result.durationMinutes = durationMinutes;
 
   if (date.found || time.found || explicitDuration) {

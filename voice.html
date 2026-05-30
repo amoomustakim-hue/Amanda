@@ -277,6 +277,11 @@
           <span class="text-warning ml-1" id="debug-duplicate-blocked">false</span>
         </div>
 
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Ignored (Speaking):</span>
+          <span class="text-warning ml-1" id="debug-ignored-speaking">false</span>
+        </div>
+
         <hr class="border-white/10" />
 
         <div class="p-2 bg-white/5 rounded border border-white/10">
@@ -339,6 +344,43 @@
         <hr class="border-white/10" />
 
         <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Backend Latency:</span>
+          <span class="text-primary ml-1" id="debug-backend-latency">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">TTS Provider:</span>
+          <span class="text-primary ml-1" id="debug-tts-provider">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">TTS Fallback Used:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-tts-fallback">false</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">TTS Latency:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-tts-latency">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Speech Duration:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-speech-duration">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Total Turn Latency:</span>
+          <span class="text-primary ml-1" id="debug-total-latency">—</span>
+        </div>
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
+          <span class="text-on-surface-variant/60">Voice Name:</span>
+          <span class="text-on-surface/80 ml-1" id="debug-voice-name">—</span>
+        </div>
+
+        <hr class="border-white/10" />
+
+        <div class="p-2 bg-white/5 rounded border border-white/10">
           <span class="text-on-surface-variant/60">Backend Reply:</span>
           <div class="text-on-surface/80 mt-1 break-words italic" id="debug-backend-reply">—</div>
         </div>
@@ -351,6 +393,7 @@
     id="voice-debug-toggle" type="button">Debug</button>
 
   <script src="/src/voice-client.js?v=voice-reply-fix-2" type="module"></script>
+  <script src="/src/voice-client.js?v=voice-elevenlabs-tts-1" type="module"></script>
 </body>
 
 </html>
