@@ -165,6 +165,7 @@ async function run() {
     const fourth = await voice(user2.cookie, "3pm.");
     assert(fourth.agent.intent === "calendar_prepare_event_followup", `Expected time follow-up intent, got ${fourth.agent.intent}.`);
     assert(fourth.agent.usedFollowUpContext === true, "Expected time follow-up to use calendar context.");
+    assert(fourth.agent.followUpType === "time", `Expected time follow-up type, got ${fourth.agent.followUpType}.`);
     assertNotGenericReply(fourth.reply);
     const fifth = await voice(user2.cookie, "location is Lagos State.");
     const user2Approvals = await approvals(user2.cookie);
@@ -184,6 +185,12 @@ async function run() {
     assert(user3Approvals.length === 0, `Expected 0 approvals for location-only input without context, got ${user3Approvals.length}.`);
     assertNotGenericReply(sixth.reply);
 
+    const timeOnlyNoContext = await voice(user3.cookie, "10 a.m.");
+    assert(timeOnlyNoContext.agent.intent === "calendar_followup_needs_target", `Expected no-context time follow-up target request, got ${timeOnlyNoContext.agent.intent}.`);
+    assert(timeOnlyNoContext.agent.usedFollowUpContext === false, "Expected no calendar follow-up context for time-only input.");
+    assert(/what should i apply that location or time update to/i.test(timeOnlyNoContext.reply), `Expected clarifying reply for time-only input, got ${timeOnlyNoContext.reply}.`);
+    assertNotGenericReply(timeOnlyNoContext.reply);
+
     const user4 = await signup(4);
     const seventh = await voice(user4.cookie, "Schedule a product review Friday at 2pm for 1 hour at Ikeja office.");
     const user4Approvals = await approvals(user4.cookie);
@@ -192,6 +199,27 @@ async function run() {
     assert(user4Approvals[0].payload.title === "Product review", `Expected Product review title, got ${user4Approvals[0].payload.title}.`);
     assert(Number(user4Approvals[0].payload.durationMinutes) === 60, `Expected 60 minute duration, got ${user4Approvals[0].payload.durationMinutes}.`);
     assert(user4Approvals[0].payload.location === "Ikeja office", `Expected Ikeja office location, got ${user4Approvals[0].payload.location}.`);
+
+    const user5 = await signup(5);
+    const missingTime = await voice(user5.cookie, "Schedule a meeting tomorrow.");
+    assert(/what time should i schedule/i.test(missingTime.reply), `Expected missing-time clarification, got ${missingTime.reply}.`);
+    const tenAmFollowUp = await voice(user5.cookie, "10 a.m.");
+    const user5Approvals = await approvals(user5.cookie);
+    assert(tenAmFollowUp.agent.intent === "calendar_prepare_event_followup", `Expected 10 a.m. follow-up intent, got ${tenAmFollowUp.agent.intent}.`);
+    assert(tenAmFollowUp.agent.usedFollowUpContext === true, "Expected 10 a.m. to use pending calendar context.");
+    assert(tenAmFollowUp.agent.followUpType === "time", `Expected time follow-up type for 10 a.m., got ${tenAmFollowUp.agent.followUpType}.`);
+    assert(tenAmFollowUp.agent.calendarParser?.timeText === "10 a.m.", `Expected raw timeText 10 a.m., got ${JSON.stringify(tenAmFollowUp.agent.calendarParser)}.`);
+    assert(tenAmFollowUp.agent.calendarParser?.normalizedTime === "10:00 AM", `Expected normalizedTime 10:00 AM, got ${JSON.stringify(tenAmFollowUp.agent.calendarParser)}.`);
+    assert(user5Approvals.length === 1, `Expected one approval after 10 a.m. follow-up, got ${user5Approvals.length}.`);
+    assert(/T10:00:00\.000\+01:00/.test(user5Approvals[0].payload.start), `Expected approval start at 10:00, got ${user5Approvals[0].payload.start}.`);
+    assertNotGenericReply(tenAmFollowUp.reply);
+
+    const user6 = await signup(6);
+    const directTenAm = await voice(user6.cookie, "Schedule a supplier meeting tomorrow at 10 a.m.");
+    const user6Approvals = await approvals(user6.cookie);
+    assert(directTenAm.agent.intent === "calendar_prepare_event", `Expected direct 10 a.m. schedule intent, got ${directTenAm.agent.intent}.`);
+    assert(user6Approvals.length === 1, `Expected one approval for direct 10 a.m. schedule, got ${user6Approvals.length}.`);
+    assert(/T10:00:00\.000\+01:00/.test(user6Approvals[0].payload.start), `Expected direct approval start at 10:00, got ${user6Approvals[0].payload.start}.`);
 
     console.log("Calendar follow-up routing tests passed.");
   } finally {

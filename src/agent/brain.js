@@ -827,6 +827,7 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
         draftsCreated: draft ? 1 : 0,
         importantMessagesFound: latestMessage ? 1 : 0,
         importantCandidatesCount: latestMessage ? 1 : 0,
+        latestMessageFound: Boolean(latestMessage),
         routedTo: "gmail.draftLatestEmail",
         syncedMessagesCount: gmailSyncedCount(data),
       };
@@ -1232,9 +1233,10 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
         durationMinutes: payload.durationMinutes || 30,
         location: payload.location || "",
         missingFields: payload.missingFields || [],
+        normalizedTime: payload.timeLabel || "",
         start: payload.start || "",
         end: payload.end || "",
-        timeText: payload.timeLabel || "",
+        timeText: payload.timeText || payload.timeLabel || "",
         title: payload.title || "",
       };
     }
@@ -1255,9 +1257,36 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
         followUpType: followUpInfo?.followUpType || "",
         location: payload.location || "",
         missingFields: payload.missingFields || [],
+        normalizedTime: followUpInfo?.normalizedTime || payload.timeLabel || "",
         start: payload.start || "",
         end: payload.end || "",
-        timeText: followUpInfo?.timeLabel || "",
+        timeText: followUpInfo?.timeText || followUpInfo?.timeLabel || "",
+        title: payload.title || "",
+      };
+    } else if (isCalendarFollowUp && routingMemory?.pendingClarification?.partialPayload) {
+      const basePayload = routingMemory.pendingClarification.partialPayload;
+      const updatedFields = new Set(followUpInfo?.fields || []);
+      payload = {
+        ...basePayload,
+        ...pickDefinedCalendarUpdates(followUpInfo),
+        requestedFrom: "voice",
+        subject: `Create calendar event: ${basePayload.title || "Meeting"}`,
+        userMessage: calendarMessage,
+      };
+      payload.title = payload.title || basePayload.title || "Meeting";
+      payload.location = payload.location || basePayload.location || "";
+      payload.timeZone = payload.timeZone || basePayload.timeZone || "Africa/Lagos";
+      payload.missingFields = (basePayload.missingFields || []).filter((field) => !updatedFields.has(field));
+      intent.debugCalendarParser = {
+        dateText: followUpInfo?.dateLabel || basePayload.dateLabel || "",
+        durationMinutes: payload.durationMinutes || 30,
+        followUpType: followUpInfo?.followUpType || "",
+        location: payload.location || "",
+        missingFields: payload.missingFields || [],
+        normalizedTime: followUpInfo?.normalizedTime || payload.timeLabel || "",
+        start: payload.start || "",
+        end: payload.end || "",
+        timeText: followUpInfo?.timeText || followUpInfo?.timeLabel || "",
         title: payload.title || "",
       };
     }
@@ -1295,7 +1324,9 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
             ? requestOrPreview.reused && !requestOrPreview.updated
               ? `I already prepared that calendar event for approval. You can approve or reject it from the approval queue.`
               : isCalendarFollowUp
-                ? calendarFollowUpReply(followUpInfo?.followUpType, followUpInfo)
+                ? pendingCalendarApproval
+                  ? calendarFollowUpReply(followUpInfo?.followUpType, followUpInfo)
+                  : `I added ${followUpInfo?.normalizedTime || followUpInfo?.timeLabel || "that time"} to the meeting request and prepared it for approval: ${payload.title || "Meeting"}, ${formatEventTime(payload.start)}.`
                 : requestOrPreview.updated
                   ? `I updated the pending calendar approval with the new details: ${payload.title}, ${formatEventTime(payload.start)}${payload.location ? `, at ${payload.location}` : ""}.`
                   : `I prepared this calendar event for approval: ${payload.title}, ${formatEventTime(payload.start)}${payload.location ? `, at ${payload.location}` : ""}. I will not add it to Google Calendar until you approve it.`

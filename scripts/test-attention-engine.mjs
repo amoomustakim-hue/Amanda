@@ -148,6 +148,7 @@ async function testDirectEngine() {
     });
     assert(summary.items.some((item) => item.source === "gmail" && item.type === "email_needs_reply"), "Expected important Gmail attention item.");
     assert(summary.items.some((item) => item.type === "gmail_draft_waiting_review"), "Expected Gmail draft review attention item.");
+    assert(summary.items.some((item) => item.type === "gmail_draft_approval_pending"), "Expected Gmail draft approval pending attention item.");
     assert(summary.items.some((item) => item.type === "calendar_event_soon"), "Expected soon calendar event attention item.");
     assert(summary.items.some((item) => item.type === "calendar_approval_pending"), "Expected pending calendar approval item.");
     assert(summary.items[0].score >= summary.items[1].score, "Expected deterministic score ranking.");

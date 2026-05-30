@@ -543,6 +543,10 @@ async function run() {
       "Write replies for important Gmail emails.",
       "Create replies for important emails.",
       "Write replies for important emails.",
+      "Draft important emails.",
+      "Draught important emails.",
+      "Draft important Gmail.",
+      "Prepare important emails.",
     ]) {
       const routedReply = await voice(importantUser.cookie, phrase);
       assert(routedReply.agent.intent === "gmail_draft_replies", `Expected gmail_draft_replies intent for "${phrase}", got ${routedReply.agent.intent}.`);
@@ -577,6 +581,49 @@ async function run() {
     const latestEmailCreateReply = await voice(importantUser.cookie, "Create a reply for the latest Gmail email.");
     assert(latestEmailCreateReply.agent.intent === "gmail_draft_latest_email", `Expected gmail_draft_latest_email intent for latest create phrase, got ${latestEmailCreateReply.agent.intent}.`);
     assert(latestEmailCreateReply.agent.gmail?.draftsCreated === 1, `Expected one latest-email draft for create phrase, got ${latestEmailCreateReply.agent.gmail?.draftsCreated}.`);
+
+    const latestPhraseUser = await signup(4);
+    await connectGmailThroughCallback(latestPhraseUser.cookie, {
+      access_token: "read-only-access-token-4",
+      expires_in: 3600,
+      refresh_token: "read-only-refresh-token-4",
+      scope: "https://www.googleapis.com/auth/gmail.readonly",
+    });
+    await syncGmailViaApiWithFixtures(latestPhraseUser.cookie, buildImportantGmailFixtures());
+    const beforeLatestPhraseDebug = await getJson(`${baseUrl}/api/session/debug`, latestPhraseUser.cookie);
+    assert(beforeLatestPhraseDebug.json.gmailDraftsCount === 0, `Expected 0 latest-phrase drafts before drafting, got ${beforeLatestPhraseDebug.json.gmailDraftsCount}.`);
+    assert(beforeLatestPhraseDebug.json.pendingGmailApprovalCount === 0, `Expected 0 latest-phrase approvals before drafting, got ${beforeLatestPhraseDebug.json.pendingGmailApprovalCount}.`);
+
+    for (const phrase of [
+      "Draught latest email.",
+      "Draft latest email.",
+      "Draft last email.",
+      "Draught last email.",
+      "Prepare latest email.",
+      "Reply latest email.",
+      "Create Gmail draft.",
+      "Email draft.",
+      "Gmail draft.",
+    ]) {
+      const phraseReply = await voice(latestPhraseUser.cookie, phrase);
+      assert(phraseReply.agent.intent === "gmail_draft_latest_email", `Expected gmail_draft_latest_email intent for "${phrase}", got ${phraseReply.agent.intent}.`);
+      assert(phraseReply.agent.routedTo === "gmail.draftLatestEmail", `Expected Gmail latest draft route for "${phrase}", got ${phraseReply.agent.routedTo}.`);
+      assert(phraseReply.agent.gmail?.latestMessageFound === true, `Expected latestMessageFound=true for "${phrase}".`);
+      assert(phraseReply.agent.gmail?.draftsCreated === 1, `Expected one latest-email draft for "${phrase}", got ${phraseReply.agent.gmail?.draftsCreated}.`);
+      assert(phraseReply.agent.gmail?.approvalRequestsCreated === 1, `Expected one latest-email approval for "${phrase}", got ${phraseReply.agent.gmail?.approvalRequestsCreated}.`);
+      assert(/Approval Queue/i.test(phraseReply.reply), `Expected Approval Queue reply for "${phrase}", got ${phraseReply.reply}.`);
+    }
+
+    const afterLatestPhraseDebug = await getJson(`${baseUrl}/api/session/debug`, latestPhraseUser.cookie);
+    assert(afterLatestPhraseDebug.json.gmailDraftsCount >= 1, `Expected latest-phrase drafts after drafting, got ${afterLatestPhraseDebug.json.gmailDraftsCount}.`);
+    assert(afterLatestPhraseDebug.json.pendingGmailApprovalCount >= 1, `Expected latest-phrase approvals after drafting, got ${afterLatestPhraseDebug.json.pendingGmailApprovalCount}.`);
+    const latestPhraseApprovals = await approvalRequests(latestPhraseUser.cookie);
+    const latestPhraseGmailApproval = latestPhraseApprovals.find(
+      (item) => item.connectorId === "gmail" && item.action === "create_gmail_draft" && item.status === "pending",
+    );
+    assert(latestPhraseGmailApproval, "Expected latest-phrase Gmail draft approval to appear in the Approval Queue.");
+    assert(latestPhraseGmailApproval.payload?.bodyPreview, "Expected latest-phrase approval to include bodyPreview.");
+    assert(!latestPhraseGmailApproval.payload?.body, "Expected latest-phrase approval payload not to expose full draft body.");
 
     const composeDb = { ...emptyDb, connectorTokensByUser: {} };
     saveConnectorToken(composeDb, "user_compose", "gmail", {

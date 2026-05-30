@@ -1717,3 +1717,36 @@ Testing notes:
 - Confirm `npm run check`.
 - Confirm protected route redirects, dashboard/workspace/connectors/settings/transcript/voice load, and no console errors.
 - Confirm `data/db.json` hash is unchanged after temp-DB tests.
+
+## Gmail Draft Voice Phrase Fix
+
+Problem fixed:
+
+- Browser speech recognition can hear `draft` as `draught`, which caused Gmail draft commands like `draught latest email` to miss the Gmail drafting route.
+- Short commands like `draft latest email`, `draft last email`, `prepare latest email`, `reply latest email`, `create Gmail draft`, `email draft`, and `Gmail draft` were too easy to route away from `gmail_draft_latest_email`.
+- Important-email draft commands now also accept shorter forms like `draft important emails`, `draught important emails`, and `prepare important emails`.
+
+Changes made:
+
+- `src/voice-client.js` normalizes `draught` to `draft` before sending the transcript to `/api/voice/respond`, while preserving the raw transcript in the debug panel.
+- `src/agent/intent-router.js` normalizes `draught` to `draft` and explicitly routes the new Gmail latest/important draft phrases.
+- `src/agent/tools.js` now uses the same draftable-message definition for important Gmail selection: `needsReply`, high/medium priority, or actionable categories like quote requests, pricing inquiries, complaints, support requests, bookings, partnerships, and follow-ups.
+- `voice.html` cache-busts the updated voice client so the browser picks up the transcript normalization.
+
+Safety behavior:
+
+- Gmail voice drafting still creates only a local Amanda draft plus a pending `create_gmail_draft` approval request.
+- No email is sent.
+- No real Gmail Draft is created until the user approves from Amanda.
+- Approval payloads expose only safe previews such as `bodyPreview`, not full private draft bodies or OAuth tokens.
+
+Expected debug metadata:
+
+- Raw transcript can show `draught latest email`.
+- Clean transcript should show `draft latest email`.
+- Agent metadata should show `intent=gmail_draft_latest_email`, `routedTo=gmail.draftLatestEmail`, `latestMessageFound=true`, `draftsCreated=1`, and `approvalRequestsCreated=1` when Gmail is connected and synced.
+
+Testing:
+
+- `scripts/test-voice-intents.mjs` covers the new draught/draft latest-email and important-email phrases.
+- `scripts/test-gmail-readonly.mjs` verifies the phrases create or reuse a local Gmail draft, create a linked pending approval request, and expose the approval in the Approval Queue without sending mail.
