@@ -14,7 +14,12 @@ const connectorNames = [
 ];
 
 function normalize(value) {
-  return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\bdraught\b/g, "draft")
+    .replace(/[.,!?]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function hasAny(text, patterns) {
@@ -48,7 +53,7 @@ function keywordQuery(text) {
 function followUpKind(text) {
   if (/^(yes|yeah|yep|approve it|approve|confirm)$/i.test(text)) return "confirmation";
   if (/\bfor\s+(?:\d+(?:\.\d+)?|one|two|three|four)\s+(?:hour|hours|minute|minutes)\b/i.test(text)) return "duration";
-  if (/\b(?:make it|move it to|change it to|set it to|at|by)?\s*\d{1,2}(?::\d{2})?\s*(am|pm)\b/i.test(text)) return "time";
+  if (/\b(?:make it|move it to|change it to|set it to|set it for|at|by)?\s*\d{1,2}(?::\d{2})?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/i.test(text)) return "time";
   if (/^(?:make it|move it|change it|update it|set it)\b.*\b(today|tomorrow|next\s+\w+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|may\s+\d{1,2})\b/i.test(text)) return "date";
   if (
     /^(at|in|on)\s+\S+/i.test(text) ||
@@ -89,7 +94,8 @@ function messageLooksLikeCalendarUpdate(text) {
   const lower = normalize(raw);
   if (!raw || isExplicitCalendarRead(lower) || looksLikeFullCalendarRequest(lower)) return false;
   return (
-    /^(?:at|by)?\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)\.?$/i.test(raw) ||
+    /^(?:at|by|for)?\s*\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\.?$/i.test(raw) ||
+    /^(?:make it|set it for|set it to|change it to|move it to)\s+\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\.?$/i.test(raw) ||
     /^(?:at|in|on)\s+.{2,60}$/i.test(raw) ||
     /^for\s+(?:\d+(?:\.\d+)?|one|two|three|four)\s+(?:hour|hours|minute|minutes)\.?$/i.test(raw) ||
     /^(?:make|change|update|move|set)\s+it\b/i.test(raw) ||
@@ -105,7 +111,7 @@ function calendarEntityHints(text) {
   const location = text.match(
     /\b(?:the\s+)?location\s+is\s+(?:at\s+)?(.+?)$|\b(?:change|set)\s+(?:the\s+)?location\s+to\s+(.+?)$|\buse\s+(.+?)\s+as\s+the\s+location$|^(?:at|in|on)\s+(.+?)$/i,
   );
-  const time = text.match(/\b(?:at|by)?\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  const time = text.match(/\b(?:at|by|for|make it|set it for|set it to|change it to|move it to)?\s*(\d{1,2}(?::\d{2})?\s*(?:a\.?\s*m\.?|p\.?\s*m\.?|am|pm))\b/i);
   const date = text.match(/\b(today|tomorrow|next\s+\w+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|may\s+\d{1,2})\b/i);
   const duration = text.match(/\bfor\s+((?:\d+(?:\.\d+)?|one|two|three|four)\s+(?:hour|hours|minute|minutes))\b/i);
   if (location) entities.location = [location[1], location[2], location[3], location[4]].find(Boolean)?.trim();
@@ -320,6 +326,11 @@ export function routeIntent(message, options = {}) {
 
   if (
     hasAny(text, [
+      "draft important emails",
+      "draft important email",
+      "draft important gmail",
+      "draft important gmail emails",
+      "prepare important emails",
       "draft replies for important emails",
       "draft replies for important email",
       "draft replies for important gmail",
@@ -348,6 +359,25 @@ export function routeIntent(message, options = {}) {
 
   if (
     hasAny(text, [
+      "draft latest email",
+      "draft latest gmail",
+      "draft latest gmail email",
+      "draft last email",
+      "draft last gmail",
+      "prepare latest email",
+      "prepare reply latest email",
+      "reply latest email",
+      "create email draft",
+      "create gmail draft",
+      "create a gmail draft",
+      "create latest gmail draft",
+      "create email reply",
+      "create latest reply",
+      "create gmail reply",
+      "create reply for latest email",
+      "create reply for my latest email",
+      "gmail draft",
+      "email draft",
       "draft a reply to the latest gmail email",
       "draft a reply to the latest email",
       "write a reply to the latest gmail email",
@@ -359,7 +389,9 @@ export function routeIntent(message, options = {}) {
     /\b(?:draft|write|create)\s+a\s+reply\s+to\s+the\s+latest\s+gmail\s+email\b/.test(text) ||
     /\b(?:draft|write|create)\s+a\s+reply\s+to\s+the\s+latest\s+email\b/.test(text) ||
     /\b(?:draft|write|create)\s+a\s+reply\s+for\s+the\s+latest\s+gmail\s+email\b/.test(text) ||
-    /\b(?:draft|write|create)\s+a\s+reply\s+for\s+the\s+latest\s+email\b/.test(text)
+    /\b(?:draft|write|create)\s+a\s+reply\s+for\s+the\s+latest\s+email\b/.test(text) ||
+    /\b(?:draft|prepare|reply|create)\s+(?:the\s+)?(?:latest|last)\s+(?:gmail\s+)?email\b/.test(text) ||
+    /\b(?:create\s+)?(?:gmail|email)\s+draft\b/.test(text)
   ) {
     if (/\bfrom\s+\S+/.test(text)) {
       // Let sender-specific draft routing handle "latest email from X".
