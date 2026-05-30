@@ -123,6 +123,7 @@ function visibleBusinessData(data = {}) {
     "records",
     "summaries",
     "tasks",
+    "websiteEvents",
   ]) {
     next[key] = visibleRecords(data[key] || []);
   }
@@ -492,6 +493,7 @@ function defaultBusinessData(user) {
       actionLogs: [],
       approvalRequests: [],
       records: [],
+      websiteEvents: [],
       updatedAt: createdAt,
     };
   }
@@ -833,6 +835,7 @@ function normalizeBusinessData(user, existing = {}) {
     "records",
     "summaries",
     "tasks",
+    "websiteEvents",
   ]) {
     if (!Array.isArray(next[key])) next[key] = defaults[key] || [];
   }
@@ -861,6 +864,9 @@ function summarizeBusinessData(data = {}) {
     connectors: data.connectors?.length || 0,
     connectedConnectors:
       data.connectors?.filter((item) => item.mode !== "not_connected").length || 0,
+    websiteEvents: (data.websiteEvents || []).length,
+    websiteOpenEvents: (data.websiteEvents || []).filter((e) => e.status === "new" || e.status === "reviewed").length,
+    websiteHighPriority: (data.websiteEvents || []).filter((e) => e.priority === "high" && (e.status === "new" || e.status === "reviewed")).length,
     updatedAt: data.updatedAt || null,
   };
 }
@@ -1585,6 +1591,88 @@ async function handleApi(request, response) {
     }
   }
 
+  // ── Website Connector: POST (session OR webhook secret) ──────────────────
+  if (request.method === "POST" && url.pathname === "/api/connectors/website/events") {
+    const webhookSecret = process.env.WEBSITE_CONNECTOR_SECRET;
+    const headerSecret = request.headers["x-amanda-website-secret"];
+    const webhookAuthed = Boolean(webhookSecret && headerSecret && headerSecret === webhookSecret);
+    const sessionUser = webhookAuthed ? null : await getSessionUser(request);
+
+    if (!webhookAuthed && !sessionUser) {
+      sendJson(response, 401, { ok: false, error: "Unauthorized." });
+      return;
+    }
+
+    const body = await parseBody(request);
+    const allowedTypes = new Set([
+      "new_order", "abandoned_checkout", "failed_payment", "delivery_complaint",
+      "refund_request", "bulk_order_inquiry", "high_value_inquiry", "support_message", "contact_form",
+    ]);
+    const rawType = String(body?.type || "").toLowerCase().trim();
+    if (!rawType || !allowedTypes.has(rawType)) {
+      sendJson(response, 400, { ok: false, error: "Invalid or missing website event type." });
+      return;
+    }
+
+    const rawValue = Number(body?.value ?? 0);
+    const value = Number.isFinite(rawValue) && rawValue >= 0 ? rawValue : 0;
+
+    function deriveWebsitePriority(type, val) {
+      if (["high_value_inquiry", "bulk_order_inquiry", "failed_payment", "delivery_complaint"].includes(type)) return "high";
+      if (type === "abandoned_checkout" && val >= 100000) return "high";
+      if (type === "refund_request" && val >= 100000) return "high";
+      if (["new_order", "refund_request", "support_message", "contact_form"].includes(type)) return "medium";
+      return "low";
+    }
+
+    const db = await loadDb();
+    let targetUser = sessionUser;
+    if (!targetUser) {
+      const defaultUserId = process.env.WEBSITE_CONNECTOR_DEFAULT_USER_ID;
+      if (defaultUserId) targetUser = db.users.find((u) => u.id === defaultUserId);
+      if (!targetUser && (isDemoMode() || process.env.NODE_ENV === "development")) targetUser = db.users[0];
+    }
+    if (!targetUser) {
+      sendJson(response, 422, { ok: false, error: "No target workspace for website event. Set WEBSITE_CONNECTOR_DEFAULT_USER_ID." });
+      return;
+    }
+
+    ensureUserDefaults(db, targetUser);
+    const data = db.businessDataByUser[targetUser.id];
+    if (!Array.isArray(data.websiteEvents)) data.websiteEvents = [];
+
+    const now = new Date().toISOString();
+    const eventId = makeId("web_evt");
+    const priority = deriveWebsitePriority(rawType, value);
+    const newEvent = {
+      createdAt: now,
+      currency: String(body?.currency || "NGN").toUpperCase().slice(0, 3),
+      customerName: String(body?.customerName || "").trim().slice(0, 100) || "Unknown customer",
+      email: String(body?.email || "").trim().toLowerCase().slice(0, 200),
+      id: eventId,
+      message: String(body?.message || "").trim().slice(0, 500),
+      metadata: (body?.metadata && typeof body.metadata === "object") ? body.metadata : {},
+      priority,
+      product: String(body?.product || "").trim().slice(0, 200),
+      source: String(body?.source || "mock_ecommerce_website").slice(0, 100),
+      status: "new",
+      type: rawType,
+      updatedAt: now,
+      userId: targetUser.id,
+      value,
+    };
+    data.websiteEvents.push(newEvent);
+
+    const tools = createAmandaTools({ businessData: data, makeId, userId: targetUser.id });
+    tools.logAction("receiveWebsiteEvent", { eventId, priority, type: rawType, value });
+
+    invalidateUserCache(targetUser.id);
+    await queueWrite();
+    sendJson(response, 201, { ok: true, event: newEvent });
+    return;
+  }
+  // ── End Website Connector POST ────────────────────────────────────────────
+
   const user = await getSessionUser(request);
   if (!user) {
     sendJson(response, 401, { error: "Unauthorized." });
@@ -1731,6 +1819,70 @@ async function handleApi(request, response) {
     };
     await queueWrite();
     sendJson(response, 200, { ok: true, overview });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/connectors/website/events") {
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const data = visibleBusinessData(db.businessDataByUser[user.id]);
+    let events = data.websiteEvents || [];
+    const { status, type, priority, limit } = Object.fromEntries(url.searchParams);
+    if (status) events = events.filter((e) => e.status === status);
+    if (type) events = events.filter((e) => e.type === type);
+    if (priority) events = events.filter((e) => e.priority === priority);
+    const limitN = Math.min(100, Math.max(1, Number(limit) || 50));
+    events = events.slice(-limitN).reverse();
+    sendJson(response, 200, { ok: true, events });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/connectors/website/summary") {
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const data = visibleBusinessData(db.businessDataByUser[user.id]);
+    const events = data.websiteEvents || [];
+    const open = events.filter((e) => e.status === "new" || e.status === "reviewed");
+    const totalPotentialValue = open.reduce((sum, e) => sum + Number(e.value || 0), 0);
+    sendJson(response, 200, {
+      ok: true,
+      summary: {
+        abandonedCheckouts: open.filter((e) => e.type === "abandoned_checkout").length,
+        bulkOrderInquiries: open.filter((e) => e.type === "bulk_order_inquiry").length,
+        failedPayments: open.filter((e) => e.type === "failed_payment").length,
+        highPriority: open.filter((e) => e.priority === "high").length,
+        highValueInquiries: open.filter((e) => e.type === "high_value_inquiry").length,
+        openEvents: open.length,
+        total: events.length,
+        totalPotentialValue,
+      },
+    });
+    return;
+  }
+
+  if (request.method === "PATCH" && url.pathname.match(/^\/api\/connectors\/website\/events\/[^/]+$/)) {
+    const eventId = url.pathname.split("/").pop();
+    const body = await parseBody(request);
+    const allowed = new Set(["reviewed", "resolved", "dismissed"]);
+    const newStatus = String(body?.status || "").toLowerCase();
+    if (!allowed.has(newStatus)) {
+      sendJson(response, 400, { ok: false, error: `Status must be one of: ${[...allowed].join(", ")}` });
+      return;
+    }
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const data = db.businessDataByUser[user.id];
+    const events = data.websiteEvents || [];
+    const event = events.find((e) => e.id === eventId);
+    if (!event) {
+      sendJson(response, 404, { ok: false, error: "Website event not found." });
+      return;
+    }
+    event.status = newStatus;
+    event.updatedAt = new Date().toISOString();
+    invalidateUserCache(user.id);
+    await queueWrite();
+    sendJson(response, 200, { ok: true, event });
     return;
   }
 

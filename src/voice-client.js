@@ -1120,7 +1120,7 @@ keyboardSubmit?.addEventListener("click", async () => {
   if (text) {
     keyboardInputContainer?.classList.add("hidden");
     keyboardInput.value = "";
-    await submitTranscript(text);
+    await sendAmandaCommand(text, "keyboard");
   }
 });
 
@@ -1192,50 +1192,17 @@ window.amandaSubmitTranscriptForSmokeTest = (transcript) => {
   return Promise.resolve();
 };
 
-// ── Keyboard text input ───────────────────────────────────────────────────────
-
-const keyboardInput = document.getElementById("keyboard-input");
-const keyboardSend = document.getElementById("keyboard-send");
-
-function syncKeyboardSendState() {
-  if (!keyboardSend) return;
-  const busy = isThinking || isAmandaSpeaking;
-  keyboardSend.disabled = busy;
-  keyboardSend.classList.toggle("opacity-40", busy);
-  keyboardSend.classList.toggle("cursor-not-allowed", busy);
-}
-
-async function handleKeyboardSubmit() {
-  const text = keyboardInput?.value?.trim() ?? "";
-  if (!text) return;
-  if (isThinking || isAmandaSpeaking) return;
-  if (keyboardInput) keyboardInput.value = "";
-  syncKeyboardSendState();
-  await sendAmandaCommand(text, "keyboard");
-  syncKeyboardSendState();
-}
-
-keyboardInput?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    handleKeyboardSubmit();
-  }
-});
-
-keyboardSend?.addEventListener("click", () => {
-  handleKeyboardSubmit();
-});
-
-// Quick-command chips
+// Quick-command chips — fill voice-keyboard-input and auto-submit
 document.querySelectorAll("[data-command]").forEach((chip) => {
   chip.addEventListener("click", () => {
     const cmd = chip.dataset.command;
     if (!cmd) return;
-    if (keyboardInput) {
-      keyboardInput.value = cmd;
-      keyboardInput.focus();
+    const el = keyboardInput;
+    if (el) {
+      el.value = cmd;
+      el.focus();
     }
-    handleKeyboardSubmit();
+    keyboardSubmit?.click();
   });
 });
 

@@ -565,6 +565,145 @@ export function routeIntent(message, options = {}) {
     };
   }
 
+  // ── Website connector intents (must run before generic operations fallback) ──
+
+  if (
+    hasAny(text, [
+      "abandoned checkout",
+      "abandoned checkouts",
+      "show abandoned checkout",
+      "show abandoned checkouts",
+      "any abandoned checkout",
+      "any abandoned checkouts",
+      "website abandoned checkout",
+      "website abandoned checkouts",
+    ])
+  ) {
+    return {
+      confidence: 0.97,
+      entities: { type: "abandoned_checkout" },
+      intent: "website_abandoned_checkouts",
+      requiresTool: true,
+      routedTo: "website.getAbandonedCheckouts",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "failed payment",
+      "failed payments",
+      "any failed payment",
+      "any failed payments",
+      "show failed payments",
+      "website failed payments",
+      "payment failed",
+      "payment failures",
+    ])
+  ) {
+    return {
+      confidence: 0.97,
+      entities: { type: "failed_payment" },
+      intent: "website_failed_payments",
+      requiresTool: true,
+      routedTo: "website.getFailedPayments",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "delivery complaint",
+      "delivery complaints",
+      "customer complaint",
+      "customer complaints",
+      "any complaints",
+      "show complaints",
+      "website complaints",
+      "customer complaints from website",
+      "any delivery complaints",
+    ])
+  ) {
+    return {
+      confidence: 0.96,
+      entities: { type: "delivery_complaint" },
+      intent: "website_complaints",
+      requiresTool: true,
+      routedTo: "website.getComplaints",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "high value inquiry",
+      "high value inquiries",
+      "high value lead",
+      "high value leads",
+      "show high value leads",
+      "bulk order inquiries",
+      "show bulk orders",
+      "high value website leads",
+      "show high value website leads",
+      "website high value leads",
+    ])
+  ) {
+    return {
+      confidence: 0.96,
+      entities: {},
+      intent: "website_high_value_leads",
+      requiresTool: true,
+      routedTo: "website.getHighValueLeads",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "website events",
+      "check website",
+      "check website events",
+      "what happened on my website",
+      "what happened on my website today",
+      "website activity",
+      "show website events",
+      "website leads",
+      "show website leads",
+    ])
+  ) {
+    return {
+      confidence: 0.96,
+      entities: {},
+      intent: "website_events",
+      requiresTool: true,
+      routedTo: "website.getEvents",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "website summary",
+      "website report",
+      "how is my website doing",
+      "what is happening on my website",
+      "website",
+    ]) ||
+    /\bwebsite\b.*\bsummary\b/.test(text) ||
+    /\bwebsite\b.*\breport\b/.test(text)
+  ) {
+    return {
+      confidence: 0.95,
+      entities: {},
+      intent: "website_summary",
+      requiresTool: true,
+      routedTo: "website.getSummary",
+      usedFollowUpContext: false,
+    };
+  }
+
+  // ── End website connector intents ─────────────────────────────────────────
+
   if (hasAny(text, ["check customer messages", "customer messages", "check messages", "support messages"])) {
     return {
       confidence: 0.93,

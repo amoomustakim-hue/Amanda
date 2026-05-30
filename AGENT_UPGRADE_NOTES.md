@@ -1,5 +1,88 @@
 # Amanda Agent Upgrade Notes
 
+## Keyboard Text Input for Voice Mode
+
+### Why it was added
+
+Speech recognition sometimes mishears short commands during demos — especially business-specific phrases like `abandoned checkout`, `create latest email`, or `what needs my attention today`. Keyboard input gives a reliable fallback that produces identical behavior to spoken commands.
+
+### How it works
+
+A compact text input panel sits above the nav bar on `/voice`. The user can:
+
+- Type a command and press **Enter** to send.
+- Click **Send**.
+- Click one of the four quick-command chips (fills and sends immediately).
+- Use **Shift + Enter** for a multi-line input.
+
+Typed commands go through the exact same handler as speech: `sendAmandaCommand(text, "keyboard")`. This means:
+
+- Same `/api/voice/respond` backend route.
+- Same intent routing, Gemini brain, and safety policy.
+- Same TTS playback (ElevenLabs or Web Speech).
+- Same duplicate-blocking (5-second window).
+- Same approval queue, Gmail, Calendar, and website connector routing.
+- Same debug panel update.
+
+Filler-only filtering (`uh`, `um`, `okay`) is skipped for keyboard input — typed commands are always submitted if non-empty.
+
+### `sendAmandaCommand(text, source)`
+
+The former `submitTranscript(transcript)` was renamed to `sendAmandaCommand(text, source = "voice")`. Both call sites (speech recognition `onend` and the smoke-test hook) pass `source: "voice"`. The keyboard handlers pass `source: "keyboard"`.
+
+### Debug field `inputSource`
+
+Each voice turn now records the input source in the debug panel and in `debugSnapshot()`:
+
+```json
+{ "inputSource": "keyboard" }
+{ "inputSource": "voice" }
+```
+
+### Quick-command chips
+
+Four chips appear in the input panel for demo convenience:
+
+```
+Attention today         → "What needs my attention today?"
+Abandoned checkout      → "Abandoned checkout"
+Create latest email     → "Create latest email"
+What needs approval     → "What needs approval?"
+```
+
+Clicking a chip fills the input and sends immediately.
+
+### Send button state
+
+The Send button is disabled while Amanda is thinking or speaking, preventing double-sends.
+
+### Manual demo commands to test
+
+| Typed command | Expected intent |
+|---|---|
+| `abandoned checkout` | `website_abandoned_checkouts` |
+| `what happened on my website today` | `website_events` |
+| `what needs my attention today` | `attention_summary` |
+| `create latest email` | `gmail_draft_latest_email` |
+| `what needs approval` | `needs_approval` |
+| `check my calendar today` | `calendar_today` |
+| `send the email` | `gmail_send_blocked` (safety blocked) |
+
+### Tests run
+
+```bash
+npm run check
+node scripts/test-voice-intents.mjs
+node scripts/test-website-connector.mjs
+node scripts/test-gmail-readonly.mjs
+node scripts/test-calendar-followups.mjs
+node scripts/test-attention-engine.mjs
+```
+
+All pass. No regressions.
+
+---
+
 ## TTS Provider Switching
 
 ### How to switch TTS

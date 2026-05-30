@@ -293,6 +293,78 @@ async function applyGeminiRanking(items, deterministic, useGemini) {
   }
 }
 
+function websiteEventScore(event = {}) {
+  const value = Number(event.value || 0);
+  const type = String(event.type || "").toLowerCase();
+  if (type === "high_value_inquiry") return 95;
+  if (type === "abandoned_checkout" && value >= 100000) return 92;
+  if (type === "bulk_order_inquiry") return 90;
+  if (type === "failed_payment") return 88;
+  if (type === "delivery_complaint") return 85;
+  if (type === "refund_request" && value >= 100000) return 80;
+  if (type === "new_order") return 60;
+  if (type === "support_message" || type === "contact_form") return 50;
+  return 30;
+}
+
+function websiteAttentionType(event = {}) {
+  const map = {
+    abandoned_checkout: "website_abandoned_checkout",
+    failed_payment: "website_failed_payment",
+    bulk_order_inquiry: "website_bulk_order_inquiry",
+    high_value_inquiry: "website_high_value_inquiry",
+    delivery_complaint: "website_delivery_complaint",
+    refund_request: "website_refund_request",
+    new_order: "website_new_order",
+    support_message: "website_support_message",
+    contact_form: "website_contact_form",
+  };
+  return map[String(event.type || "").toLowerCase()] || "website_event";
+}
+
+function websiteEventTitle(event = {}) {
+  const name = cleanText(event.customerName || "Customer");
+  const value = Number(event.value || 0);
+  const formatted = value > 0 ? ` ₦${value.toLocaleString("en-NG")}` : "";
+  const type = String(event.type || "").toLowerCase();
+  if (type === "abandoned_checkout") return `Abandoned checkout${formatted} from ${name}`;
+  if (type === "failed_payment") return `Failed payment${formatted} from ${name}`;
+  if (type === "bulk_order_inquiry") return `Bulk order inquiry from ${name}`;
+  if (type === "high_value_inquiry") return `High-value inquiry${formatted} from ${name}`;
+  if (type === "delivery_complaint") return `Delivery complaint from ${name}`;
+  if (type === "refund_request") return `Refund request${formatted} from ${name}`;
+  if (type === "new_order") return `New order${formatted} from ${name}`;
+  return `Website event from ${name}`;
+}
+
+function collectWebsiteSignals(events = []) {
+  return events
+    .filter((event) => event.status === "new" || event.status === "reviewed")
+    .map((event) => {
+      const score = websiteEventScore(event);
+      const product = cleanText(event.product || "");
+      const value = Number(event.value || 0);
+      const formatted = value > 0 ? ` ₦${value.toLocaleString("en-NG")}` : "";
+      const description = cleanText(
+        event.message ||
+        `${websiteEventTitle(event)}${product ? ` for ${product}` : ""}${formatted ? ` (${formatted})` : ""}.`,
+      ).slice(0, 180);
+      return item({
+        createdAt: event.createdAt,
+        description,
+        id: makeId("attention", `web_${event.id}`),
+        priority: event.priority || priorityFromScore(score),
+        reason: "Business event from your website that may need a follow-up.",
+        recommendedAction: "Review the event or ask Amanda to prepare a follow-up draft.",
+        relatedRecordId: event.id,
+        score,
+        source: "website",
+        title: websiteEventTitle(event),
+        type: websiteAttentionType(event),
+      });
+    });
+}
+
 export async function getUnifiedAttentionSummary(userId, { businessData = {}, connectors = [], now = new Date(), useGemini = true } = {}) {
   const items = dedupeAndRank([
     ...collectGmailSignals(businessData.gmailMessages || []),
@@ -300,6 +372,7 @@ export async function getUnifiedAttentionSummary(userId, { businessData = {}, co
     ...collectApprovalSignals(businessData),
     ...collectCalendarSignals(businessData.calendarEvents || [], now),
     ...collectTaskSignals(businessData.tasks || [], now),
+    ...collectWebsiteSignals(businessData.websiteEvents || []),
     ...collectConnectorSignals(connectors.length ? connectors : businessData.connectors || [], now),
   ]);
   const deterministic = deterministicSummary(items);
