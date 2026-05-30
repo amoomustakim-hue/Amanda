@@ -3,6 +3,130 @@
    Dark premium theme · Gold accents · Nigerian e-commerce demo
    ============================================================ */
 
+/* ── Tab Bar ────────────────────────────────────────────── */
+.tab-bar {
+  position: sticky; top: 72px; z-index: 40;
+  background: rgba(8,8,8,.95); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+.tab-bar .container { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 24px; }
+.tabs { display: flex; align-items: center; gap: 4px; }
+.tab {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px; font-size: 13px; font-weight: 500;
+  color: var(--text-2); border-bottom: 2px solid transparent;
+  transition: var(--transition); white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab i { font-size: 16px; }
+.btn-snapshot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px; background: var(--gold); color: #000;
+  border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
+  white-space: nowrap; transition: var(--transition);
+}
+.btn-snapshot:hover { background: var(--gold-lt); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,168,76,.3); }
+.btn-snapshot i { font-size: 14px; }
+
+/* ── Analytics KPI Grid ─────────────────────────────────── */
+.analytics-kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px;
+}
+.kpi-card {
+  background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; display: flex; gap: 16px; align-items: flex-start;
+  transition: var(--transition);
+}
+.kpi-card:hover { border-color: var(--border-2); transform: translateY(-2px); }
+.kpi-alert { border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.04); }
+.kpi-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+}
+.kpi-gold   { background: rgba(201,168,76,.15); color: var(--gold); }
+.kpi-green  { background: rgba(34,197,94,.15);  color: var(--green); }
+.kpi-blue   { background: rgba(59,130,246,.15); color: var(--blue); }
+.kpi-red    { background: rgba(239,68,68,.15);  color: var(--red); }
+.kpi-amber  { background: rgba(245,158,11,.15); color: var(--amber); }
+.kpi-purple { background: rgba(168,85,247,.15); color: var(--purple); }
+.kpi-orange { background: rgba(249,115,22,.15); color: var(--orange); }
+.kpi-body { min-width: 0; }
+.kpi-value { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.kpi-label { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.kpi-sub   { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+/* ── Analytics Layout ───────────────────────────────────── */
+.analytics-row { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+.analytics-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; }
+.analytics-card.wide { }
+.ac-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.ac-title { font-size: 15px; font-weight: 600; }
+.ac-tag { font-size: 11px; padding: 3px 10px; border-radius: 99px; background: var(--bg-4); color: var(--text-3); }
+.ac-warn { background: rgba(245,158,11,.1); color: var(--amber); }
+
+/* Product chart bars */
+.pc-row { display: grid; grid-template-columns: 160px 1fr 90px 120px; align-items: center; gap: 12px; margin-bottom: 12px; }
+.pc-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-bar-wrap { background: var(--bg-4); border-radius: 99px; height: 8px; overflow: hidden; }
+.pc-bar { height: 100%; border-radius: 99px; transition: width .6s ease; }
+.pc-rev { font-size: 12px; font-weight: 600; text-align: right; }
+.pc-status { font-size: 11px; }
+
+/* Attention items */
+.attn-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.attn-item:last-child { border-bottom: none; }
+.attn-ico { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.attn-txt { font-size: 13px; line-height: 1.5; }
+.attn-empty { font-size: 13px; color: var(--text-3); padding: 20px 0; }
+
+/* ── Product Status Badge ───────────────────────────────── */
+.product-status-badge {
+  position: absolute; top: 40px; left: 12px;
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 99px;
+}
+.status-trending      { background: rgba(34,197,94,.18); color: #22C55E; }
+.status-low_stock     { background: rgba(245,158,11,.18); color: #F59E0B; }
+.status-underperforming { background: rgba(239,68,68,.18); color: #EF4444; }
+
+/* ── Support Tickets ────────────────────────────────────── */
+.ticket-card {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-left: 4px solid var(--border); border-radius: var(--radius-lg);
+  padding: 20px; margin-bottom: 16px; transition: var(--transition);
+}
+.ticket-card:hover { transform: translateY(-2px); border-color: var(--border-2); }
+.ticket-card.pri-high   { border-left-color: var(--red); }
+.ticket-card.pri-medium { border-left-color: var(--amber); }
+.ticket-card.pri-low    { border-left-color: var(--text-3); }
+.ticket-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ticket-type-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 99px; border: 1px solid; }
+.ticket-priority { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; text-transform: uppercase; }
+.pri-badge-high   { background: rgba(239,68,68,.15); color: var(--red); }
+.pri-badge-medium { background: rgba(245,158,11,.15); color: var(--amber); }
+.pri-badge-low    { background: var(--bg-4); color: var(--text-3); }
+.ticket-status { font-size: 11px; font-weight: 600; text-transform: uppercase; margin-left: auto; }
+.ticket-time   { font-size: 11px; color: var(--text-3); }
+.ticket-body { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.ticket-customer { }
+.t-cname  { font-size: 14px; font-weight: 600; }
+.t-email  { font-size: 12px; color: var(--text-3); }
+.ticket-meta { text-align: right; }
+.t-product { font-size: 12px; color: var(--text-2); }
+.t-product span { color: var(--text-3); }
+.t-value { font-size: 18px; font-weight: 700; color: var(--gold); }
+.ticket-msg { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 12px; }
+.ticket-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tkt-btn {
+  display: flex; align-items: center; gap: 6px; padding: 6px 14px;
+  background: rgba(201,168,76,.1); border: 1px solid rgba(201,168,76,.25);
+  color: var(--gold); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;
+  transition: var(--transition);
+}
+.tkt-btn:hover { background: rgba(201,168,76,.2); }
+.t-id { font-size: 10px; color: var(--text-3); }
+
 /* ── Variables ──────────────────────────────────────────── */
 :root {
   --bg:         #080808;

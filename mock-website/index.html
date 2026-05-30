@@ -85,7 +85,30 @@
     </div>
   </section>
 
-  <div class="ticker">
+  <!-- Tab Navigation -->
+  <div class="tab-bar" id="tab-bar">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" data-tab="storefront" onclick="switchTab('storefront')">
+          <i class='bx bx-store'></i> Storefront
+        </button>
+        <button class="tab" data-tab="analytics" onclick="switchTab('analytics')">
+          <i class='bx bx-bar-chart-alt-2'></i> Analytics
+        </button>
+        <button class="tab" data-tab="customer-care" onclick="switchTab('customer-care')">
+          <i class='bx bx-support'></i> Customer Care
+        </button>
+        <button class="tab" data-tab="business-events" onclick="switchTab('business-events')">
+          <i class='bx bx-pulse'></i> Business Events
+        </button>
+      </div>
+      <button class="btn-snapshot" onclick="sendStoreSnapshot()" title="Send full store analytics to Amanda">
+        <i class='bx bx-send'></i> Send Snapshot to Amanda
+      </button>
+    </div>
+  </div>
+
+  <div class="ticker" data-section="storefront">
     <div class="ticker-track">
       <span>Premium Quality</span><span class="td">◆</span>
       <span>Fast Delivery</span><span class="td">◆</span>
@@ -100,7 +123,7 @@
     </div>
   </div>
 
-  <section class="section" id="products">
+  <section class="section" id="products" data-section="storefront">
     <div class="container">
       <div class="sec-head">
         <div class="sec-tag">Featured Products</div>
@@ -111,18 +134,59 @@
     </div>
   </section>
 
-  <section class="section demo-section" id="demo-events">
+  <!-- Analytics Tab -->
+  <section class="section hidden" id="section-analytics" data-section="analytics">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-tag amanda-tag">Store Intelligence</div>
+        <h2 class="sec-h2">Store Analytics</h2>
+        <p class="sec-p">Live performance metrics Amanda monitors for your business.</p>
+      </div>
+      <div class="analytics-kpi-grid" id="analytics-kpi-grid"></div>
+      <div class="analytics-row">
+        <div class="analytics-card wide">
+          <div class="ac-head">
+            <span class="ac-title">Product Performance</span>
+            <span class="ac-tag">Revenue ranking</span>
+          </div>
+          <div id="analytics-products-chart"></div>
+        </div>
+        <div class="analytics-card">
+          <div class="ac-head">
+            <span class="ac-title">Needs Attention</span>
+            <span class="ac-tag ac-warn">Amanda flagged</span>
+          </div>
+          <div id="analytics-attention"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Customer Care Tab -->
+  <section class="section hidden" id="section-customer-care" data-section="customer-care">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-tag">Support Queue</div>
+        <h2 class="sec-h2">Customer Care Center</h2>
+        <p class="sec-p">Open support tickets Amanda is monitoring for priority follow-up.</p>
+      </div>
+      <div id="support-tickets-list"></div>
+    </div>
+  </section>
+
+  <!-- Business Events Tab -->
+  <section class="section demo-section" id="demo-events" data-section="business-events">
     <div class="container">
       <div class="sec-head">
         <div class="sec-tag amanda-tag">Amanda Integration</div>
         <h2 class="sec-h2">Business Event Simulator</h2>
-        <p class="sec-p">Simulate real e-commerce events Amanda will monitor and surface to the business owner as priority actions.</p>
+        <p class="sec-p">Simulate real e-commerce events. Each one posts directly to Amanda's Website Connector API.</p>
       </div>
       <div class="demo-grid" id="demo-grid"></div>
     </div>
   </section>
 
-  <section class="section" id="events-panel">
+  <section class="section hidden-xs" id="events-panel" data-section="business-events">
     <div class="container">
       <div class="events-head">
         <div>
