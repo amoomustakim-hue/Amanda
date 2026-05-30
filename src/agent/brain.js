@@ -175,6 +175,12 @@ const routedIntentMap = {
   operations_summary: "attention_today",
   order_summary: "order_ops",
   unknown: "general_ops",
+  website_abandoned_checkouts: "website_events",
+  website_complaints: "website_events",
+  website_events: "website_events",
+  website_failed_payments: "website_events",
+  website_high_value_leads: "website_events",
+  website_summary: "website_events",
 };
 
 function classifyIntent(message, memory = {}) {
@@ -1045,6 +1051,65 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
       { source: "Amanda", status: "queued", text: "Flag inventory or fulfillment risk" },
     );
     memoryNote = "User asked for order operations review.";
+  } else if (intent.id === "website_events") {
+    const routedIntent = intent.routedIntent || "website_events";
+    const allEvents = data.websiteEvents || [];
+    const openEvents = allEvents.filter((e) => e.status === "new" || e.status === "reviewed");
+
+    if (!allEvents.length && !openEvents.length) {
+      reply = "I do not see any website events in Amanda yet. You can send events from your website to the Website Connector API and I will surface them here.";
+      tasks.push({ source: "Website", status: "active", text: "Waiting for website events via API" });
+      memoryNote = "User asked about website events — none yet.";
+    } else {
+      let filtered = openEvents;
+      let filterLabel = "website";
+
+      if (routedIntent === "website_abandoned_checkouts") {
+        filtered = openEvents.filter((e) => e.type === "abandoned_checkout");
+        filterLabel = "abandoned checkout";
+      } else if (routedIntent === "website_failed_payments") {
+        filtered = openEvents.filter((e) => e.type === "failed_payment");
+        filterLabel = "failed payment";
+      } else if (routedIntent === "website_complaints") {
+        filtered = openEvents.filter((e) => e.type === "delivery_complaint");
+        filterLabel = "delivery complaint";
+      } else if (routedIntent === "website_high_value_leads") {
+        filtered = openEvents.filter((e) =>
+          e.type === "high_value_inquiry" || e.type === "bulk_order_inquiry" || Number(e.value || 0) >= 100000,
+        );
+        filterLabel = "high-value";
+      } else if (routedIntent === "website_summary") {
+        const highCount = openEvents.filter((e) => e.priority === "high").length;
+        const totalValue = openEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
+        const topEvent = openEvents.slice().sort((a, b) => Number(b.value || 0) - Number(a.value || 0))[0];
+        reply = `Your website has ${openEvents.length} open event${openEvents.length === 1 ? "" : "s"}. ${highCount} ${highCount === 1 ? "is" : "are"} high priority.${totalValue > 0 ? ` Total potential value: ₦${totalValue.toLocaleString("en-NG")}.` : ""}${topEvent ? ` The most valuable is ${topEvent.type.replace(/_/g, " ")} from ${topEvent.customerName || "a customer"}.` : ""}`;
+        tasks.push(
+          { source: "Website", status: "active", text: "Review high-priority website events" },
+          { source: "Amanda", status: "queued", text: "Follow up on high-value opportunities" },
+        );
+        memoryNote = "User asked for a website summary.";
+      }
+
+      if (!reply) {
+        if (!filtered.length) {
+          reply = `I do not see any ${filterLabel} events right now on your website.`;
+        } else {
+          const top = filtered.slice().sort((a, b) => Number(b.value || 0) - Number(a.value || 0)).slice(0, 3);
+          const topEvent = top[0];
+          const topValue = Number(topEvent.value || 0);
+          const topFormatted = topValue > 0 ? ` worth ₦${topValue.toLocaleString("en-NG")}` : "";
+          reply = filtered.length === 1
+            ? `You have one ${filterLabel} event: ${topEvent.type.replace(/_/g, " ")} from ${topEvent.customerName || "a customer"}${topFormatted}${topEvent.product ? ` for ${topEvent.product}` : ""}. ${topEvent.message || ""}`.trim()
+            : `You have ${filtered.length} ${filterLabel} event${filtered.length === 1 ? "" : "s"}. The most valuable is ${topEvent.type.replace(/_/g, " ")} from ${topEvent.customerName || "a customer"}${topFormatted}${topEvent.product ? ` for ${topEvent.product}` : ""}. ${top.length > 1 ? `Also: ${top.slice(1).map((e) => `${e.type.replace(/_/g, " ")} from ${e.customerName || "a customer"}`).join(", ")}.` : ""}`.trim();
+        }
+
+        tasks.push(
+          { source: "Website", status: "active", text: `Review ${filterLabel} events` },
+          { source: "Amanda", status: "queued", text: "Follow up on high-value website opportunities" },
+        );
+        memoryNote = `User asked about ${filterLabel} website events.`;
+      }
+    }
   } else if (intent.id === "pending_deliveries") {
     const pendingOrders = tools
       ? rememberAction("listOrders", tools.listOrders({ pendingOnly: true }))

@@ -125,4 +125,23 @@ check("What is urgent today?", "attention_summary");
 check("Give me my business priorities.", "attention_summary");
 check("What are my top priorities?", "attention_summary");
 
+// Website connector intents — must not fall through to generic workspace fallback
+for (const [phrase, intent, routedTo] of [
+  ["what happened on my website today", "website_events",               "website.getEvents"],
+  ["website events",                     "website_events",               "website.getEvents"],
+  ["website leads",                      "website_events",               "website.getEvents"],
+  ["abandoned checkout",                 "website_abandoned_checkouts",  "website.getAbandonedCheckouts"],
+  ["show abandoned checkouts",           "website_abandoned_checkouts",  "website.getAbandonedCheckouts"],
+  ["any abandoned checkouts",            "website_abandoned_checkouts",  "website.getAbandonedCheckouts"],
+  ["failed payment",                     "website_failed_payments",      "website.getFailedPayments"],
+  ["any failed payments",                "website_failed_payments",      "website.getFailedPayments"],
+  ["payment failed",                     "website_failed_payments",      "website.getFailedPayments"],
+  ["delivery complaint",                 "website_complaints",           "website.getComplaints"],
+  ["any customer complaints",            "website_complaints",           "website.getComplaints"],
+  ["show high value website leads",      "website_high_value_leads",     "website.getHighValueLeads"],
+  ["high value inquiry",                 "website_high_value_leads",     "website.getHighValueLeads"],
+]) {
+  check(phrase, intent, { routedTo });
+}
+
 console.log("Voice intent regression tests passed.");
