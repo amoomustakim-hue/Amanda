@@ -6,8 +6,10 @@
 
 'use strict';
 
-const AMANDA_BASE    = 'http://localhost:3000';
-const AMANDA_SECRET  = 'demo-secret';
+// Set window.__AMANDA_BASE_URL__ before loading this script to point at a deployed backend.
+// Defaults to localhost:3000 for local development.
+const AMANDA_BASE   = (typeof window !== 'undefined' && window.__AMANDA_BASE_URL__) || 'http://localhost:3000';
+const AMANDA_SECRET = 'demo-secret';
 
 // ── State ─────────────────────────────────────────────────
 let cart   = JSON.parse(localStorage.getItem('lc_cart')   || '[]');

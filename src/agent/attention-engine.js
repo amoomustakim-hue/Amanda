@@ -1,4 +1,5 @@
 import { rankAttentionSignals } from "./gemini.js";
+import { buildBusinessAttentionSignals } from "./business-projection.js";
 
 function cleanText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -431,6 +432,18 @@ export async function getUnifiedAttentionSummary(userId, { businessData = {}, co
     ...collectTaskSignals(businessData.tasks || [], now),
     ...collectWebsiteSignals(businessData.websiteEvents || []),
     ...collectSheetsSignals(businessData.googleSheets || {}),
+    ...buildBusinessAttentionSignals(businessData).map((signal) => item({
+      createdAt: new Date().toISOString(),
+      description: signal.reason,
+      id: makeId("attention", `biz_${signal.type}`),
+      priority: signal.priority,
+      reason: signal.reason,
+      recommendedAction: signal.recommendedAction,
+      score: signal.score,
+      source: "business_health",
+      title: signal.title,
+      type: signal.type,
+    })),
     ...collectConnectorSignals(connectors.length ? connectors : businessData.connectors || [], now),
   ]);
   const deterministic = deterministicSummary(items);

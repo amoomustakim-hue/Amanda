@@ -340,6 +340,34 @@ function redirect(response, location) {
   response.end();
 }
 
+function allowedOrigin(requestOrigin) {
+  const frontend = String(process.env.FRONTEND_URL || "").trim();
+  if (!frontend) return requestOrigin || "*";
+  if (!requestOrigin) return frontend;
+  const allowed = [frontend, String(process.env.BASE_URL || "").trim()].filter(Boolean);
+  // Allow localhost origins in development
+  if (process.env.NODE_ENV !== "production") {
+    if (/^https?:\/\/localhost(:\d+)?$/.test(requestOrigin)) return requestOrigin;
+    if (/^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(requestOrigin)) return requestOrigin;
+  }
+  return allowed.includes(requestOrigin) ? requestOrigin : allowed[0] || requestOrigin;
+}
+
+function addCorsHeaders(request, response) {
+  const origin = request.headers.origin;
+  const ao = allowedOrigin(origin);
+  if (ao) response.setHeader("Access-Control-Allow-Origin", ao);
+  response.setHeader("Access-Control-Allow-Credentials", "true");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-amanda-website-secret");
+  if (ao && ao !== "*") response.setHeader("Vary", "Origin");
+}
+
+function cookieFlags() {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  return `Path=/; HttpOnly${secure}; SameSite=Lax`;
+}
+
 function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.writeHead(statusCode, {
     "Cache-Control": "no-store",
@@ -997,6 +1025,34 @@ function decorateConnector(db, userId, connector) {
       status: connected ? gmailStatusLabel(credential.scope, credential.hasAccessToken) : connector.status,
     };
   }
+  if (connector.id === "google_sheets") {
+    const tokenStatus = sheetsTokenStatus(db, userId);
+    const data = db.businessDataByUser[userId] || {};
+    const sheetState = data.googleSheets || {};
+    const connected = Boolean(tokenStatus.hasToken);
+    const summary = sheetState.summary || null;
+    return {
+      ...connector,
+      mode: connected ? "real" : "not_connected",
+      oauth: googleSheetsSetupStatus(),
+      sheetsStatus: {
+        connected,
+        hasReadScope: hasSheetsReadScope(tokenStatus.scope || ""),
+        lastSyncedAt: sheetState.lastSyncedAt || null,
+        spreadsheetId: sheetState.spreadsheetId || "",
+        summary: summary ? {
+          customerIssueCount: summary.customerIssues?.length || 0,
+          lowStockCount: summary.lowStockItems?.length || 0,
+          recommendations: (summary.recommendations || []).slice(0, 2),
+          topProduct: summary.topProduct || null,
+          topProductRevenue: summary.topProductRevenue || 0,
+          totalRevenue: summary.totalRevenue || 0,
+        } : null,
+        totalRows: sheetState.totalRows || 0,
+      },
+      status: connected ? "Connected" : "Not connected",
+    };
+  }
   return connector;
 }
 
@@ -1368,9 +1424,7 @@ async function createSession(response, userId) {
   await queueWrite();
   response.setHeader(
     "Set-Cookie",
-    `Amanda_session=${encodeURIComponent(session.id)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(
-      sessionTtlMs / 1000,
-    )}`,
+    `Amanda_session=${encodeURIComponent(session.id)}; ${cookieFlags()}; Max-Age=${Math.floor(sessionTtlMs / 1000)}`,
   );
 }
 
@@ -1381,10 +1435,7 @@ async function clearSession(request, response) {
   const db = await loadDb();
   db.sessions = db.sessions.filter((item) => item.id !== sessionId);
   await queueWrite();
-  response.setHeader(
-    "Set-Cookie",
-    "Amanda_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0",
-  );
+  response.setHeader("Set-Cookie", `Amanda_session=; ${cookieFlags()}; Max-Age=0`);
 }
 
 function resolveRequestPath(url) {
@@ -1436,7 +1487,12 @@ async function handleApi(request, response) {
   const url = new URL(request.url, `http://localhost:${port}`);
 
   if (request.method === "GET" && url.pathname === "/api/health") {
-    sendJson(response, 200, { ok: true, timestamp: new Date().toISOString() });
+    sendJson(response, 200, {
+      env: process.env.NODE_ENV || "development",
+      ok: true,
+      service: "amanda",
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
@@ -3099,6 +3155,14 @@ async function handleApi(request, response) {
 
 const server = createServer(async (request, response) => {
   try {
+    addCorsHeaders(request, response);
+    // Handle CORS preflight
+    if (request.method === "OPTIONS") {
+      response.writeHead(204);
+      response.end();
+      return;
+    }
+
     const url = new URL(request.url || "/", `http://localhost:${port}`);
     const pathname = url.pathname;
 
@@ -3133,8 +3197,9 @@ const server = createServer(async (request, response) => {
 });
 
 if (process.env.AMANDA_SKIP_LISTEN !== "true") {
-  server.listen(port, () => {
-    console.log(`Amanda app running at http://localhost:${port}/`);
+  server.listen(port, "0.0.0.0", () => {
+    const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+    console.log(`Amanda app running at ${baseUrl} (port ${port})`);
   });
 }
 

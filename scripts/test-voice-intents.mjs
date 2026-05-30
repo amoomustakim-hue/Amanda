@@ -144,4 +144,25 @@ for (const [phrase, intent, routedTo] of [
   check(phrase, intent, { routedTo });
 }
 
+// Business Health & Projection intents — must not fall through to generic fallback
+for (const [phrase, intent, routedTo] of [
+  ["How is my business doing?",                        "business_health",              "business.health"],
+  ["Is my business doing well?",                       "business_health",              "business.health"],
+  ["Is my business improving or getting worse?",       "business_health",              "business.health"],
+  ["Project my business for the next 3 months",       "business_projection_3_months", "business.projection3m"],
+  ["What will my business look like in 6 months?",    "business_projection_6_months", "business.projection6m"],
+  ["Give me a 1 year business projection",            "business_projection_1_year",   "business.projection1y"],
+  ["What should I focus on to grow?",                 "business_growth_advice",       "business.growthAdvice"],
+  ["What is hurting my business right now?",          "business_risks",               "business.risks"],
+  ["What products should I double down on?",          "business_focus_products",      "business.focusProducts"],
+  ["What products should I stop pushing?",            "business_focus_products",      "business.focusProducts"],
+  ["Business projection",                             "business_projection",          "business.projection"],
+]) {
+  check(phrase, intent, { routedTo });
+  // Extra guard: confirm none of these fall to generic fallback
+  if (routeIntent(phrase).routedTo === "general.fallback") {
+    throw new Error(`"${phrase}" must not route to general.fallback`);
+  }
+}
+
 console.log("Voice intent regression tests passed.");

@@ -107,9 +107,23 @@ function connectorNote(connector) {
     }
     return "OAuth is configured. Ready to connect Gmail. Compose permission enables real Gmail draft creation after approval.";
   }
+  if (connector.id === "google_sheets") {
+    const sh = connector.sheetsStatus;
+    if (!sh) return "Google Sheets read-only connector.";
+    if (!connector.oauth?.isConfigured) return missingEnvHtml("Google Sheets", connector.oauth?.missingEnv || []);
+    if (!sh.connected) return "Connect Google Sheets to read your spreadsheet. OAuth is configured — click Connect.";
+    if (!sh.spreadsheetId) return "Connected. Paste your Spreadsheet ID below and click Save Sheet.";
+    if (!sh.lastSyncedAt) return `Sheet ID saved. Click Sync Sheet to read data from Google Sheets (read-only).`;
+    const s = sh.summary;
+    if (!s) return `Synced ${sh.totalRows} row${sh.totalRows === 1 ? "" : "s"}. No structured summary found — check column names.`;
+    const parts = [];
+    if (s.topProduct) parts.push(`Top: ${s.topProduct}`);
+    if (s.lowStockCount) parts.push(`Low stock: ${s.lowStockCount}`);
+    if (s.customerIssueCount) parts.push(`Issues: ${s.customerIssueCount}`);
+    return `Sheet synced — ${sh.totalRows} rows. ${parts.join(" · ") || "Summary ready."}`;
+  }
   if (connector.id !== "google_calendar") {
     if (state.demoMode && connector.mode === "demo") return "Demo only. No real external actions execute.";
-    if (connector.id === "google_sheets") return "Google Sheets read-only setup is coming soon.";
     return "Coming soon. Not connected to a real external system yet.";
   }
   if (!connector.oauth?.isConfigured) {
@@ -143,6 +157,7 @@ function syncLabel(connector) {
 }
 
 function connectorActions(connector, action) {
+  if (connector.id === "google_sheets") return ""; // controls handled in connectorControls
   if (!state.demoMode && !["google_calendar", "gmail"].includes(connector.id)) {
     return `
       <button class="btn btn-disabled" type="button" disabled>Coming Soon</button>
@@ -179,6 +194,55 @@ function connectorControls(connector) {
     return `
       <div class="mt-3 grid grid-cols-1 gap-2">
         <button class="${connectClass}" type="button" ${connectDisabled}>${label}</button>
+      </div>
+    `;
+  }
+  if (connector.id === "google_sheets") {
+    const sh = connector.sheetsStatus || {};
+    const configured = Boolean(connector.oauth?.isConfigured);
+    if (!configured) {
+      return `
+        <div class="mt-3">
+          <button class="btn btn-disabled w-full" type="button" disabled>OAuth Not Configured</button>
+        </div>
+      `;
+    }
+    if (!sh.connected) {
+      return `
+        <div class="mt-3 grid grid-cols-1 gap-2">
+          <button class="google-sheets-connect btn btn-secondary" type="button">Connect Google Sheets</button>
+        </div>
+      `;
+    }
+    // Connected: show spreadsheet ID form + sync controls
+    const spreadsheetId = escapeHtml(sh.spreadsheetId || "");
+    const summaryHtml = sh.summary ? `
+      <div class="mt-3 p-3 rounded-lg bg-white/5 border border-white/10 space-y-1 text-xs">
+        ${sh.summary.topProduct ? `<div class="flex justify-between"><span class="text-on-surface-variant">Top product</span><span class="text-on-surface font-medium">${escapeHtml(sh.summary.topProduct)}</span></div>` : ""}
+        <div class="flex justify-between"><span class="text-on-surface-variant">Rows synced</span><span class="text-on-surface">${sh.totalRows}</span></div>
+        <div class="flex justify-between"><span class="text-on-surface-variant">Low stock</span><span class="${sh.summary.lowStockCount > 0 ? "text-warning" : "text-on-surface"}">${sh.summary.lowStockCount}</span></div>
+        <div class="flex justify-between"><span class="text-on-surface-variant">Customer issues</span><span class="${sh.summary.customerIssueCount > 0 ? "text-warning" : "text-on-surface"}">${sh.summary.customerIssueCount}</span></div>
+        ${sh.summary.recommendations?.[0] ? `<div class="pt-1 text-primary-fixed-dim">${escapeHtml(sh.summary.recommendations[0])}</div>` : ""}
+      </div>` : "";
+    return `
+      <div class="mt-3 space-y-3">
+        <div>
+          <label class="text-[10px] uppercase tracking-widest text-on-surface-variant block mb-1">Spreadsheet ID</label>
+          <input
+            class="sheets-id-input w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/50 font-mono"
+            placeholder="Paste spreadsheet ID from the Sheet URL"
+            type="text"
+            value="${spreadsheetId}"
+          />
+          <p class="text-[10px] text-on-surface-variant/50 mt-1">From URL: …/spreadsheets/d/<strong>ID</strong>/edit</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button class="sheets-save btn btn-secondary" type="button">Save Sheet</button>
+          <button class="sheets-sync btn btn-primary" type="button">Sync Sheet</button>
+        </div>
+        ${sh.lastSyncedAt ? `<p class="text-[10px] text-on-surface-variant">Last synced: ${formatTime(sh.lastSyncedAt)}</p>` : ""}
+        ${summaryHtml}
+        <button class="google-sheets-disconnect btn btn-danger w-full" type="button">Disconnect</button>
       </div>
     `;
   }
@@ -262,6 +326,25 @@ function renderConnectors() {
                   <div class="p-3 rounded-lg bg-white/5 border border-white/10">
                     <p class="text-on-surface-variant uppercase text-[10px] tracking-widest">Drafts Waiting</p>
                     <p class="mt-1 text-on-surface">${escapeHtml(connector.gmailStats?.draftsWaiting || 0)}</p>
+                  </div>
+                </div>`
+              : connector.id === "google_sheets" && connector.sheetsStatus?.totalRows
+              ? `<div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                  <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <p class="text-on-surface-variant uppercase text-[10px] tracking-widest">Rows</p>
+                    <p class="mt-1 text-on-surface">${escapeHtml(connector.sheetsStatus.totalRows)}</p>
+                  </div>
+                  <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <p class="text-on-surface-variant uppercase text-[10px] tracking-widest">Top Product</p>
+                    <p class="mt-1 text-on-surface truncate">${escapeHtml(connector.sheetsStatus.summary?.topProduct || "—")}</p>
+                  </div>
+                  <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <p class="text-on-surface-variant uppercase text-[10px] tracking-widest">Low Stock</p>
+                    <p class="mt-1 text-on-surface">${escapeHtml(connector.sheetsStatus.summary?.lowStockCount || 0)}</p>
+                  </div>
+                  <div class="p-3 rounded-lg bg-white/5 border border-white/10">
+                    <p class="text-on-surface-variant uppercase text-[10px] tracking-widest">Issues</p>
+                    <p class="mt-1 text-on-surface">${escapeHtml(connector.sheetsStatus.summary?.customerIssueCount || 0)}</p>
                   </div>
                 </div>`
               : ""
@@ -459,7 +542,11 @@ document.addEventListener("click", async (event) => {
   const disconnectCalendar = event.target.closest(".google-calendar-disconnect");
   const connectGmail = event.target.closest(".gmail-connect");
   const disconnectGmail = event.target.closest(".gmail-disconnect");
-  if (!sync && !preview && !approval && !decision && !dismiss && !connectCalendar && !disconnectCalendar && !connectGmail && !disconnectGmail) return;
+  const connectSheets = event.target.closest(".google-sheets-connect");
+  const disconnectSheets = event.target.closest(".google-sheets-disconnect");
+  const sheetsSave = event.target.closest(".sheets-save");
+  const sheetsSync = event.target.closest(".sheets-sync");
+  if (!sync && !preview && !approval && !decision && !dismiss && !connectCalendar && !disconnectCalendar && !connectGmail && !disconnectGmail && !connectSheets && !disconnectSheets && !sheetsSave && !sheetsSync) return;
 
   try {
     if (connectCalendar) {
@@ -469,6 +556,49 @@ document.addEventListener("click", async (event) => {
     if (connectGmail) {
       window.location.href = "/api/connectors/gmail/connect";
       return;
+    }
+    if (connectSheets) {
+      window.location.href = "/api/connectors/google_sheets/connect";
+      return;
+    }
+    if (disconnectSheets) {
+      disconnectSheets.disabled = true;
+      await api("/api/connectors/google_sheets/disconnect", { method: "POST", body: "{}" });
+      setFeedback("Google Sheets disconnected. Stored OAuth token deleted locally.");
+      await loadAll();
+    }
+    if (sheetsSave) {
+      const card = sheetsSave.closest("article");
+      const input = card?.querySelector(".sheets-id-input");
+      const spreadsheetId = (input?.value || "").trim();
+      if (!spreadsheetId) { setFeedback("Paste a Spreadsheet ID first.", "error"); return; }
+      sheetsSave.disabled = true;
+      sheetsSave.textContent = "Saving...";
+      await api("/api/connectors/google_sheets/config", {
+        method: "POST",
+        body: JSON.stringify({
+          spreadsheetId,
+          ranges: ["Orders!A1:H50", "Products!A1:G50", "Inventory!A1:F50", "Customer Issues!A1:I50", "Analytics!A1:C50"],
+        }),
+      });
+      setFeedback("Sheet saved. Click Sync Sheet to read the latest data.");
+      await loadAll();
+    }
+    if (sheetsSync) {
+      sheetsSync.disabled = true;
+      sheetsSync.textContent = "Syncing...";
+      try {
+        const result = await api("/api/connectors/google_sheets/sync", { method: "POST", body: "{}" });
+        setFeedback(result?.totalRows !== undefined
+          ? `Sheet synced — ${result.totalRows} row${result.totalRows === 1 ? "" : "s"} read. Read-only, no changes made to your spreadsheet.`
+          : "Sheet synced. No changes made to your spreadsheet.");
+        await loadAll();
+      } catch (syncErr) {
+        setFeedback(syncErr.message || "Sheet sync failed. Check that Google Sheets is connected and the Spreadsheet ID is correct.", "error");
+      } finally {
+        sheetsSync.disabled = false;
+        sheetsSync.textContent = "Sync Sheet";
+      }
     }
     if (disconnectCalendar) {
       disconnectCalendar.disabled = true;
@@ -554,6 +684,8 @@ document.addEventListener("click", async (event) => {
     }
     if (disconnectCalendar) disconnectCalendar.disabled = false;
     if (disconnectGmail) disconnectGmail.disabled = false;
+    if (disconnectSheets) disconnectSheets.disabled = false;
+    if (sheetsSave) { sheetsSave.disabled = false; sheetsSave.textContent = "Save Sheet"; }
   }
 });
 
@@ -582,6 +714,12 @@ if (params.get("error")?.startsWith("google_calendar")) {
 }
 if (params.get("error")?.startsWith("gmail")) {
   setFeedback("Gmail connection did not complete. No tokens were exposed or stored from the failed attempt.", "error");
+}
+if (params.get("connected") === "google_sheets") {
+  setFeedback("Google Sheets connected. Paste your Spreadsheet ID, save it, then sync to read your data.");
+}
+if (params.get("error")?.startsWith("google_sheets")) {
+  setFeedback("Google Sheets connection did not complete. No tokens were exposed or stored from the failed attempt.", "error");
 }
 
 loadAll();

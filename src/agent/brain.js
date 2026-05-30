@@ -2,6 +2,7 @@ const DEFAULT_MODEL = "gpt-5-mini";
 
 import { calendarClarification, parseCalendarEventRequest, parseCalendarFollowUp } from "./calendar-parser.js";
 import { getUnifiedAttentionSummary } from "./attention-engine.js";
+import { buildAdviceReply, buildHealthReply, buildProjectionReply } from "./business-projection.js";
 import { draftEmailReply, generateAgentDecision } from "./gemini.js";
 import { routeIntent } from "./intent-router.js";
 import { enforceGeminiDecision } from "./safety-policy.js";
@@ -186,6 +187,14 @@ const routedIntentMap = {
   sheets_low_stock: "sheets_summary",
   sheets_summary: "sheets_summary",
   sheets_top_product: "sheets_summary",
+  business_focus_products: "business_health",
+  business_growth_advice: "business_health",
+  business_health: "business_health",
+  business_projection: "business_health",
+  business_projection_1_year: "business_health",
+  business_projection_3_months: "business_health",
+  business_projection_6_months: "business_health",
+  business_risks: "business_health",
 };
 
 function classifyIntent(message, memory = {}) {
@@ -1170,6 +1179,30 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
       { source: "Amanda", status: "queued", text: "Surface recommendations from sheet data" },
     );
     memoryNote = `User asked about Google Sheets (${routedIntent}).`;
+  } else if (intent.id === "business_health") {
+    const routedIntent = intent.routedIntent || "business_health";
+    if (routedIntent === "business_projection_3_months") {
+      reply = buildProjectionReply(data, 3);
+    } else if (routedIntent === "business_projection_6_months") {
+      reply = buildProjectionReply(data, 6);
+    } else if (routedIntent === "business_projection_1_year") {
+      reply = buildProjectionReply(data, 12);
+    } else if (routedIntent === "business_projection") {
+      reply = buildProjectionReply(data, 3);
+    } else if (routedIntent === "business_risks") {
+      reply = buildAdviceReply(data, "risks");
+    } else if (routedIntent === "business_focus_products") {
+      reply = buildAdviceReply(data, "products");
+    } else if (routedIntent === "business_growth_advice") {
+      reply = buildAdviceReply(data, "growth");
+    } else {
+      reply = buildHealthReply(data);
+    }
+    tasks.push(
+      { source: "Business Intelligence", status: "active", text: "Analysing business health and projections" },
+      { source: "Amanda", status: "queued", text: "Preparing data-driven recommendations" },
+    );
+    memoryNote = `User asked about business health (${routedIntent}).`;
   } else if (intent.id === "pending_deliveries") {
     const pendingOrders = tools
       ? rememberAction("listOrders", tools.listOrders({ pendingOnly: true }))
@@ -1680,6 +1713,26 @@ function shouldUseGeminiDecision(localResult = {}) {
   );
 }
 
+// Intents that have deterministic local handlers — never hand off to Gemini/OpenAI
+const LOCALLY_HANDLED_INTENTS = new Set([
+  "attention_summary", "business_health",
+  "calendar_today", "calendar_tomorrow", "calendar_summary", "calendar_find_slots",
+  "calendar_prepare_event", "calendar_prepare_event_followup",
+  "gmail_draft_latest_email", "gmail_draft_replies", "gmail_send_blocked",
+  "gmail_sync", "gmail_summarize_unread", "gmail_attention",
+  "needs_approval", "sheets_summary",
+  "website_events", "website_abandoned_checkouts", "website_failed_payments",
+  "website_complaints", "website_high_value_leads", "website_summary",
+]);
+
+function shouldSkipAIOverride(localResult = {}) {
+  return (
+    LOCALLY_HANDLED_INTENTS.has(localResult.intent) &&
+    Number(localResult.confidence || 0) >= 0.55 &&
+    Boolean(localResult.reply)
+  );
+}
+
 function signalsForAttention(context = {}) {
   const data = context.businessData || {};
   return [
@@ -1957,6 +2010,13 @@ export async function generateAmandaResponse(context) {
   };
 
   const localResult = normalizeAgentResult(buildLocalResponse(safeContext), safeContext);
+
+  // For intents with deterministic local handlers, skip Gemini/OpenAI entirely
+  if (shouldSkipAIOverride(localResult)) {
+    await enhanceGmailDraftsWithGemini(localResult, safeContext);
+    await enhanceAttentionWithGemini(localResult, safeContext);
+    return normalizeAgentResult(localResult, safeContext);
+  }
 
   try {
     const geminiResult = await generateGeminiHybridResponse(safeContext, localResult);

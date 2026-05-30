@@ -815,6 +815,133 @@ export function routeIntent(message, options = {}) {
 
   // ── End Google Sheets intents ──────────────────────────────────────────────
 
+  // ── Business Health & Projection intents ──────────────────────────────────
+
+  if (
+    hasAny(text, [
+      "project my business for 3 months",
+      "project my business for the next 3 months",
+      "3 month business projection",
+      "3 months projection",
+      "what will my business look like in 3 months",
+      "revenue projection 3 months",
+    ]) ||
+    /\bproject\w*\b.*\b3[\s-]?month/.test(text) ||
+    /\b3[\s-]?month\b.*\bproject/.test(text)
+  ) {
+    return { confidence: 0.97, entities: { months: 3 }, intent: "business_projection_3_months", requiresTool: true, routedTo: "business.projection3m", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "project my business for 6 months",
+      "what will my business look like in 6 months",
+      "6 month business projection",
+      "6 months projection",
+      "revenue projection 6 months",
+    ]) ||
+    /\bproject\w*\b.*\b6[\s-]?month/.test(text) ||
+    /\b6[\s-]?month\b.*\bproject/.test(text)
+  ) {
+    return { confidence: 0.97, entities: { months: 6 }, intent: "business_projection_6_months", requiresTool: true, routedTo: "business.projection6m", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "give me a 1 year business projection",
+      "1 year business projection",
+      "one year projection",
+      "annual projection",
+      "what will my business look like in 1 year",
+      "12 month projection",
+      "revenue projection 1 year",
+    ]) ||
+    /\bproject\w*\b.*\b(?:1|one|12)[\s-]?year/.test(text) ||
+    /\b(?:1|one|12)[\s-]?year\b.*\bproject/.test(text)
+  ) {
+    return { confidence: 0.97, entities: { months: 12 }, intent: "business_projection_1_year", requiresTool: true, routedTo: "business.projection1y", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "project my business",
+      "project business",
+      "business projection",
+      "revenue projection",
+      "project revenue",
+    ]) ||
+    /\bproject\w*\b.*\bbusiness\b/.test(text)
+  ) {
+    return { confidence: 0.96, entities: {}, intent: "business_projection", requiresTool: true, routedTo: "business.projection", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "what products should i double down on",
+      "what products should i stop pushing",
+      "which products are performing",
+      "which products are not performing",
+      "best performing products",
+      "underperforming products",
+      "what products to focus on",
+    ]) ||
+    /\bproducts?\b.*\b(?:double down|stop pushing|perform|focus)\b/.test(text)
+  ) {
+    return { confidence: 0.96, entities: { focus: "products" }, intent: "business_focus_products", requiresTool: true, routedTo: "business.focusProducts", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "what is hurting my business",
+      "what is hurting my business right now",
+      "what are the risks to my business",
+      "business risks",
+      "what risks does my business have",
+      "what could hurt my business",
+    ]) ||
+    /\bhurt\w*\b.*\bbusiness\b/.test(text) ||
+    /\brisk\w*\b.*\bbusiness\b/.test(text)
+  ) {
+    return { confidence: 0.96, entities: { focus: "risks" }, intent: "business_risks", requiresTool: true, routedTo: "business.risks", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "what should i focus on to grow",
+      "how do i grow my business",
+      "how can i grow my business",
+      "business growth advice",
+      "how to grow",
+      "what should i focus on for growth",
+      "growth recommendations",
+    ]) ||
+    /\bgrow\w*\b.*\bbusiness\b/.test(text) ||
+    /\bbusiness\b.*\bgrow\w*\b/.test(text)
+  ) {
+    return { confidence: 0.95, entities: { focus: "growth" }, intent: "business_growth_advice", requiresTool: true, routedTo: "business.growthAdvice", usedFollowUpContext: false };
+  }
+
+  if (
+    hasAny(text, [
+      "how is my business doing",
+      "is my business doing well",
+      "is my business improving",
+      "is my business getting worse",
+      "is my business improving or getting worse",
+      "business health",
+      "how healthy is my business",
+      "how is the business performing",
+      "business performance",
+      "business status",
+    ]) ||
+    /\bhow\b.*\bmy business\b/.test(text) ||
+    /\bmy business\b.*\b(?:doing|performing|status|health)\b/.test(text)
+  ) {
+    return { confidence: 0.96, entities: {}, intent: "business_health", requiresTool: true, routedTo: "business.health", usedFollowUpContext: false };
+  }
+
+  // ── End Business Health & Projection intents ──────────────────────────────
+
   if (hasAny(text, ["check customer messages", "customer messages", "check messages", "support messages"])) {
     return {
       confidence: 0.93,
