@@ -94,6 +94,7 @@ let debugData = {
   approvalId: "",
   backendReply: "",
   brain: "",
+  inputSource: "voice",
   recognitionCount: 0,
   safetyDecision: "",
   duplicateBlocked: false,
@@ -161,6 +162,7 @@ function debugSnapshot() {
     voiceState: debugData.voiceState || mode,
     finalResult: Boolean(debugData.isFinal),
     // safety flags
+    inputSource: debugData.inputSource || "voice",
     duplicateBlocked: Boolean(debugData.duplicateBlocked),
     ignoredBecauseSpeaking: Boolean(debugData.ignoredBecauseSpeaking),
     // routing
@@ -254,6 +256,7 @@ function updateDebugPanel() {
   update("debug-voice-state", debugData.voiceState);
   update("debug-final-result", debugData.isFinal);
   update("debug-recognition-count", debugData.recognitionCount);
+  update("debug-input-source", debugData.inputSource || "voice");
   update("debug-duplicate-blocked", debugData.duplicateBlocked ? "YES" : "false");
   update("debug-ignored-speaking", debugData.ignoredBecauseSpeaking ? "YES" : "false");
   update("debug-intent", debugData.intent || "—");
@@ -623,18 +626,23 @@ async function speak(text) {
   }
 }
 
-async function submitTranscript(transcript) {
+// Shared entry point for both speech and keyboard input.
+async function sendAmandaCommand(transcript, source = "voice") {
   const cleanTranscript = normalizeVoiceTranscript(transcript);
   if (!cleanTranscript) return;
-  if (isFillerOnly(cleanTranscript)) {
+
+  // Filler-only filtering only applies to voice (mic) — not typed commands
+  if (source === "voice" && isFillerOnly(cleanTranscript)) {
     debugData.rawTranscript = transcript;
     debugData.cleanedTranscript = cleanTranscript;
     debugData.duplicateBlocked = false;
+    debugData.inputSource = source;
     updateDebugPanel();
     setMode("listening", "I heard a little noise. Listening again...");
     restartListeningSoon(700);
     return;
   }
+
   const now = Date.now();
   if (
     cleanTranscript.toLowerCase() === lastSentTranscript.toLowerCase() &&
@@ -644,14 +652,20 @@ async function submitTranscript(transcript) {
     debugData.cleanedTranscript = cleanTranscript;
     debugData.duplicateBlocked = true;
     debugData.ignoredBecauseSpeaking = false;
+    debugData.inputSource = source;
     updateDebugPanel();
-    setMode("listening", "Already handling that request. Listening again...");
-    restartListeningSoon(700);
+    if (source === "keyboard") {
+      setMode(mode, "That command was just sent. Give Amanda a moment.");
+    } else {
+      setMode("listening", "Already handling that request. Listening again...");
+      restartListeningSoon(700);
+    }
     return;
   }
 
   debugData.duplicateBlocked = false;
   debugData.ignoredBecauseSpeaking = false;
+  debugData.inputSource = source;
   lastSentTranscript = cleanTranscript;
   lastSentAt = now;
   isThinking = true;
@@ -888,7 +902,7 @@ function startRecognition() {
       if (transcript) {
         appState.finalTranscript = "";
         appState.interimTranscript = "";
-        await submitTranscript(transcript);
+        await sendAmandaCommand(transcript, "voice");
       } else {
         setMode("listening", "I didn't catch that. Listening again...");
         restartListeningSoon(700);
@@ -1137,10 +1151,57 @@ document.addEventListener("keydown", (event) => {
 
 window.amandaSubmitTranscriptForSmokeTest = (transcript) => {
   if (typeof transcript === "string" && transcript.trim()) {
-    return submitTranscript(transcript.trim());
+    return sendAmandaCommand(transcript.trim(), "voice");
   }
   return Promise.resolve();
 };
+
+// ── Keyboard text input ───────────────────────────────────────────────────────
+
+const keyboardInput = document.getElementById("keyboard-input");
+const keyboardSend = document.getElementById("keyboard-send");
+
+function syncKeyboardSendState() {
+  if (!keyboardSend) return;
+  const busy = isThinking || isAmandaSpeaking;
+  keyboardSend.disabled = busy;
+  keyboardSend.classList.toggle("opacity-40", busy);
+  keyboardSend.classList.toggle("cursor-not-allowed", busy);
+}
+
+async function handleKeyboardSubmit() {
+  const text = keyboardInput?.value?.trim() ?? "";
+  if (!text) return;
+  if (isThinking || isAmandaSpeaking) return;
+  if (keyboardInput) keyboardInput.value = "";
+  syncKeyboardSendState();
+  await sendAmandaCommand(text, "keyboard");
+  syncKeyboardSendState();
+}
+
+keyboardInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    handleKeyboardSubmit();
+  }
+});
+
+keyboardSend?.addEventListener("click", () => {
+  handleKeyboardSubmit();
+});
+
+// Quick-command chips
+document.querySelectorAll("[data-command]").forEach((chip) => {
+  chip.addEventListener("click", () => {
+    const cmd = chip.dataset.command;
+    if (!cmd) return;
+    if (keyboardInput) {
+      keyboardInput.value = cmd;
+      keyboardInput.focus();
+    }
+    handleKeyboardSubmit();
+  });
+});
 
 bootstrapVoice().catch((error) => {
   console.error(error);
