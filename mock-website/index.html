@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LuxeCart — Premium Lifestyle Store</title>
+  <meta name="description" content="Premium lifestyle products delivered fast. Curated for the modern African consumer." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div id="toast-container"></div>
+
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <svg width="18" height="18" viewBox="0 0 20 20"><path d="M10 1L19 10L10 19L1 10Z" fill="#C9A84C"/></svg>
+        LuxeCart
+      </a>
+      <div class="nav-links">
+        <a href="#products" class="nl">Shop</a>
+        <a href="#demo-events" class="nl">Demo Events</a>
+        <a href="#events-panel" class="nl">Live Feed</a>
+      </div>
+      <button class="nav-cart" onclick="openCart()" aria-label="Open cart">
+        <i class='bx bx-shopping-bag'></i>
+        <span id="cart-count" class="cart-badge" style="display:none">0</span>
+      </button>
+    </div>
+  </nav>
+
+  <section id="hero">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <div class="hero-eyebrow animate-up" style="animation-delay:.1s">
+          <span class="eyebrow-dot"></span> New Collection 2026
+        </div>
+        <h1 class="hero-h1 animate-up" style="animation-delay:.2s">
+          Premium<br/><em>Lifestyle.</em>
+        </h1>
+        <p class="hero-sub animate-up" style="animation-delay:.35s">
+          Curated luxury for the modern African lifestyle.<br/>
+          Fast delivery across Lagos &amp; beyond.
+        </p>
+        <div class="hero-actions animate-up" style="animation-delay:.5s">
+          <button class="btn-gold" onclick="jumpTo('products')">
+            Shop Now <i class='bx bx-right-arrow-alt'></i>
+          </button>
+          <button class="btn-ghost" onclick="generateEvent('high_value_inquiry')">
+            Demo Amanda Event
+          </button>
+        </div>
+        <div class="hero-stats animate-up" style="animation-delay:.65s">
+          <div class="hs"><span class="hs-n">12K+</span><span class="hs-l">Customers</span></div>
+          <div class="hs-div"></div>
+          <div class="hs"><span class="hs-n">500+</span><span class="hs-l">Products</span></div>
+          <div class="hs-div"></div>
+          <div class="hs"><span class="hs-n">48hr</span><span class="hs-l">Delivery</span></div>
+        </div>
+      </div>
+
+      <div class="hero-right animate-in" style="animation-delay:.3s">
+        <div class="floating-stack">
+          <div class="fc fc-1">
+            <div class="fc-img" style="background: url('https://images.unsplash.com/photo-1552346154-21d32810aba3?w=500&q=80') center/cover;"></div>
+            <div class="fc-info"><span class="fc-nm">Air Phantom Pro</span><span class="fc-pr">₦85,000</span></div>
+          </div>
+          <div class="fc fc-2">
+            <div class="fc-img" style="background: url('https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80') center/cover;"></div>
+            <div class="fc-info"><span class="fc-nm">NovaTech Watch X1</span><span class="fc-pr">₦150,000</span></div>
+          </div>
+          <div class="fc fc-3">
+            <div class="fc-img" style="background: url('https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=500&q=80') center/cover;"></div>
+            <div class="fc-info"><span class="fc-nm">SoundDrop Pro</span><span class="fc-pr">₦75,000</span></div>
+          </div>
+          <div class="verified-pill">
+            <i class='bx bxs-check-shield'></i> Verified Premium Store
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="ticker">
+    <div class="ticker-track">
+      <span>Premium Quality</span><span class="td">◆</span>
+      <span>Fast Delivery</span><span class="td">◆</span>
+      <span>Authentic Products</span><span class="td">◆</span>
+      <span>Secure Payments</span><span class="td">◆</span>
+      <span>Easy Returns</span><span class="td">◆</span>
+      <span>Premium Quality</span><span class="td">◆</span>
+      <span>Fast Delivery</span><span class="td">◆</span>
+      <span>Authentic Products</span><span class="td">◆</span>
+      <span>Secure Payments</span><span class="td">◆</span>
+      <span>Easy Returns</span><span class="td">◆</span>
+    </div>
+  </div>
+
+  <section class="section" id="products">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-tag">Featured Products</div>
+        <h2 class="sec-h2">Handpicked Premium Items</h2>
+        <p class="sec-p">Each product is carefully selected for quality, style, and performance.</p>
+      </div>
+      <div class="products-grid" id="products-grid"></div>
+    </div>
+  </section>
+
+  <section class="section demo-section" id="demo-events">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-tag amanda-tag">Amanda Integration</div>
+        <h2 class="sec-h2">Business Event Simulator</h2>
+        <p class="sec-p">Simulate real e-commerce events Amanda will monitor and surface to the business owner as priority actions.</p>
+      </div>
+      <div class="demo-grid" id="demo-grid"></div>
+    </div>
+  </section>
+
+  <section class="section" id="events-panel">
+    <div class="container">
+      <div class="events-head">
+        <div>
+          <div class="sec-tag">Live Feed</div>
+          <h2 class="sec-h2">Recent Website Events</h2>
+        </div>
+        <div class="events-ctrl">
+          <span class="live-badge"><span class="live-dot"></span> Live</span>
+          <button class="btn-xs-ghost" onclick="clearEvents()">Clear All</button>
+        </div>
+      </div>
+      <div id="events-list">
+        <div id="events-empty" class="events-empty">
+          <i class='bx bx-radar'></i>
+          <p>No events yet. Click a demo button above to simulate business activity that Amanda will monitor.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="f-logo">
+            <svg width="16" height="16" viewBox="0 0 20 20"><path d="M10 1L19 10L10 19L1 10Z" fill="#C9A84C"/></svg>
+            LuxeCart
+          </div>
+          <p>Premium lifestyle products for the modern African consumer. Quality, style, and speed — delivered.</p>
+          <span class="amanda-note">Amanda Demo Store</span>
+        </div>
+        <div class="footer-col"><h4>Shop</h4>
+          <a href="#">Sneakers</a><a href="#">Smart Gadgets</a><a href="#">Fashion</a><a href="#">Accessories</a>
+        </div>
+        <div class="footer-col"><h4>Support</h4>
+          <a href="#">Track Order</a><a href="#">Returns Policy</a><a href="#">FAQ</a><a href="#">Contact Us</a>
+        </div>
+        <div class="footer-col"><h4>Company</h4>
+          <a href="#">About</a><a href="#">Careers</a><a href="#">Privacy</a><a href="#">Terms</a>
+        </div>
+      </div>
+      <div class="footer-bot">
+        <span>© 2026 LuxeCart. All rights reserved.</span>
+        <span>Powered by Amanda AI Ops</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="overlay" id="overlay" onclick="handleOverlayClick()"></div>
+
+  <aside class="cart-sidebar" id="cart-sidebar" aria-label="Shopping cart">
+    <div class="cart-top">
+      <h3>Your Cart</h3>
+      <button onclick="closeCart()" aria-label="Close cart"><i class='bx bx-x'></i></button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <div class="cart-empty" id="cart-empty">
+        <i class='bx bx-shopping-bag'></i>
+        <p>Your cart is empty</p>
+      </div>
+    </div>
+    <div class="cart-bot" id="cart-bot" style="display:none">
+      <div class="cart-total-row">
+        <span>Subtotal</span>
+        <span id="cart-total" class="cart-total-num">₦0</span>
+      </div>
+      <button class="btn-gold full" onclick="openCheckout()">
+        <i class='bx bxs-lock-alt'></i> Checkout
+      </button>
+      <button class="btn-ghost-sm full mt8" onclick="closeCart()">Continue Shopping</button>
+    </div>
+  </aside>
+
+  <div class="modal-wrap" id="checkout-modal" style="display:none">
+    <div class="modal" id="modal-box">
+      <div class="modal-top">
+        <h3><i class='bx bxs-lock-alt'></i> Secure Checkout</h3>
+        <button onclick="closeCheckout()" aria-label="Close"><i class='bx bx-x'></i></button>
+      </div>
+
+      <div class="steps-bar">
+        <div class="step-item active" id="si-1"><span>1</span> Details</div>
+        <div class="step-line"></div>
+        <div class="step-item" id="si-2"><span>2</span> Delivery</div>
+        <div class="step-line"></div>
+        <div class="step-item" id="si-3"><span>3</span> Payment</div>
+      </div>
+
+      <div class="step-panel" id="sp-1">
+        <h4>Customer Information</h4>
+        <div class="fg"><label>Full Name</label>
+          <input id="co-name" type="text" placeholder="Amaka Okafor" /></div>
+        <div class="fg"><label>Email Address</label>
+          <input id="co-email" type="email" placeholder="amaka@example.com" /></div>
+        <div class="fg"><label>Phone Number</label>
+          <input id="co-phone" type="tel" placeholder="+234 800 000 0000" /></div>
+        <button class="btn-gold full" onclick="goStep(2)">Continue to Delivery <i class='bx bx-right-arrow-alt'></i></button>
+      </div>
+
+      <div class="step-panel hidden" id="sp-2">
+        <h4>Delivery Details</h4>
+        <div class="fg"><label>Delivery Address</label>
+          <input type="text" placeholder="5 Marina Road, Lagos Island" /></div>
+        <div class="fg"><label>State</label>
+          <select>
+            <option>Lagos</option><option>Abuja</option>
+            <option>Rivers</option><option>Kano</option><option>Ogun</option>
+          </select>
+        </div>
+        <div class="dopt-wrap">
+          <div class="dopt selected" onclick="pickDelivery(this,2500)">
+            <div><b>Standard Delivery</b><span>3–5 business days</span></div>
+            <span class="dopt-p">₦2,500</span>
+          </div>
+          <div class="dopt" onclick="pickDelivery(this,5000)">
+            <div><b>Express Delivery</b><span>24–48 hours</span></div>
+            <span class="dopt-p">₦5,000</span>
+          </div>
+        </div>
+        <button class="btn-gold full" onclick="goStep(3)">Continue to Payment <i class='bx bx-right-arrow-alt'></i></button>
+        <button class="btn-ghost-sm full mt8" onclick="goStep(1)">← Back</button>
+      </div>
+
+      <div class="step-panel hidden" id="sp-3">
+        <h4>Payment</h4>
+        <div class="order-summary" id="order-summary"></div>
+        <div class="pay-methods">
+          <div class="pm selected"><i class='bx bxs-credit-card'></i> Card Payment</div>
+          <div class="pm"><i class='bx bx-transfer'></i> Bank Transfer</div>
+        </div>
+        <div class="fg"><label>Card Number</label>
+          <input id="card-num" type="text" placeholder="4242 4242 4242 4242" maxlength="19" oninput="fmtCard(this)" /></div>
+        <div class="fg-row">
+          <div class="fg"><label>Expiry</label>
+            <input type="text" placeholder="MM/YY" maxlength="5" /></div>
+          <div class="fg"><label>CVV</label>
+            <input type="text" placeholder="•••" maxlength="3" /></div>
+        </div>
+        <button class="btn-gold full" id="pay-btn" onclick="simulatePayment()">
+          <i class='bx bxs-lock-alt'></i> Pay Now
+        </button>
+        <button class="btn-danger full mt8" onclick="simulateFailedPayment()">
+          ⚡ Simulate Failed Payment
+        </button>
+        <button class="btn-ghost-sm full mt8" onclick="goStep(2)">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
