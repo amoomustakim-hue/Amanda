@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Amanda | Connect Google Apps</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="/src/main.css" rel="stylesheet" />
+  <link href="/src/styles.css" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#dbfcff", "on-primary": "#00363a",
+            "primary-container": "#00f0ff", "primary-fixed-dim": "#00dbe9",
+            surface: "#131313", "on-surface": "#e5e2e1",
+            "on-surface-variant": "#b9cacb", "surface-container": "#201f1f",
+            "surface-container-high": "#2a2a2a", outline: "#849495",
+            "outline-variant": "#3b494b", error: "#ffb4ab",
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-[#050505] text-[#e5e2e1] flex flex-col items-center justify-center px-4 py-16">
+
+  <div class="w-full max-w-lg">
+    <!-- Header -->
+    <div class="text-center mb-10">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary-container/20 bg-primary-container/5 mb-6">
+        <div class="w-1.5 h-1.5 rounded-full bg-primary-fixed-dim animate-pulse"></div>
+        <span class="text-xs font-mono uppercase tracking-widest text-primary-fixed-dim">Amanda Setup</span>
+      </div>
+      <h1 class="text-3xl font-semibold tracking-tight text-white mb-3">Connect your Google apps</h1>
+      <p class="text-on-surface-variant text-base">Choose what Amanda should help you with. You can always connect more from Settings later.</p>
+    </div>
+
+    <!-- App cards -->
+    <div class="space-y-3 mb-8" id="app-list">
+
+      <label class="app-card flex items-start gap-4 p-4 rounded-xl border border-outline-variant/40 bg-surface-container cursor-pointer hover:border-primary-container/30 transition-all" data-app="gmail">
+        <input checked class="mt-1 accent-[#00f0ff]" name="apps" type="checkbox" value="gmail" />
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1.5 8.5l10.5 7 10.5-7M2 4h20a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z" stroke="#EA4335" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span class="font-semibold text-on-surface text-sm">Gmail</span>
+            <span class="text-[10px] bg-primary-container/10 text-primary-fixed-dim px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Recommended</span>
+          </div>
+          <p class="text-xs text-on-surface-variant">Read important emails, classify them by priority, and prepare draft replies for your approval.</p>
+          <p class="text-[10px] text-outline mt-1 font-mono">gmail.readonly · gmail.compose</p>
+        </div>
+      </label>
+
+      <label class="app-card flex items-start gap-4 p-4 rounded-xl border border-outline-variant/40 bg-surface-container cursor-pointer hover:border-primary-container/30 transition-all" data-app="calendar">
+        <input checked class="mt-1 accent-[#00f0ff]" name="apps" type="checkbox" value="calendar" />
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="#4285F4" stroke-width="1.5"/><path d="M16 2v4M8 2v4M3 9h18" stroke="#4285F4" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <span class="font-semibold text-on-surface text-sm">Google Calendar</span>
+            <span class="text-[10px] bg-primary-container/10 text-primary-fixed-dim px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Recommended</span>
+          </div>
+          <p class="text-xs text-on-surface-variant">Check your schedule, surface upcoming meetings, and prepare calendar events for your approval.</p>
+          <p class="text-[10px] text-outline mt-1 font-mono">calendar.events</p>
+        </div>
+      </label>
+
+      <label class="app-card flex items-start gap-4 p-4 rounded-xl border border-outline-variant/40 bg-surface-container cursor-pointer hover:border-primary-container/30 transition-all" data-app="sheets">
+        <input class="mt-1 accent-[#00f0ff]" name="apps" type="checkbox" value="sheets" />
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#34A853" stroke-width="1.5"/><path d="M3 8h18M8 3v18" stroke="#34A853" stroke-width="1.5"/></svg>
+            <span class="font-semibold text-on-surface text-sm">Google Sheets</span>
+            <span class="text-[10px] bg-surface-container-high text-outline px-2 py-0.5 rounded-full font-mono uppercase tracking-wider">Optional</span>
+          </div>
+          <p class="text-xs text-on-surface-variant">Read your business spreadsheet — orders, products, inventory, customer issues — and summarize what matters.</p>
+          <p class="text-[10px] text-outline mt-1 font-mono">spreadsheets.readonly</p>
+        </div>
+      </label>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="space-y-3">
+      <button
+        class="w-full py-3 px-6 rounded-xl bg-primary-container/90 text-on-primary font-semibold text-sm hover:bg-primary-container transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+        id="connect-btn"
+        type="button"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Connect selected apps
+      </button>
+      <a
+        class="block w-full py-3 px-6 rounded-xl border border-outline-variant/30 text-on-surface-variant text-sm font-medium text-center hover:text-on-surface hover:border-outline-variant/60 transition-colors"
+        href="/connectors"
+      >
+        Skip for now — connect manually from Connectors
+      </a>
+    </div>
+
+    <p class="text-center text-xs text-outline mt-8">
+      Amanda will only read your data. No emails or events are sent without your approval.
+      You can disconnect any app from <a class="underline hover:text-on-surface-variant transition-colors" href="/connectors">Connectors</a> at any time.
+    </p>
+  </div>
+
+  <script type="module">
+    const connectBtn = document.getElementById("connect-btn");
+    const checkboxes = document.querySelectorAll("input[name='apps']");
+    const feedback = document.createElement("p");
+    feedback.className = "text-sm text-error text-center mt-3 hidden";
+    connectBtn.parentElement.appendChild(feedback);
+
+    function showError(msg) {
+      feedback.textContent = msg;
+      feedback.classList.remove("hidden");
+    }
+    function clearError() { feedback.classList.add("hidden"); }
+
+    connectBtn.addEventListener("click", async () => {
+      const selected = [...checkboxes].filter((c) => c.checked).map((c) => c.value);
+      if (!selected.length) { showError("Please select at least one app to connect."); return; }
+      clearError();
+      connectBtn.disabled = true;
+      connectBtn.textContent = "Redirecting to Google…";
+      try {
+        const res = await fetch("/api/auth/google/workspace/start", {
+          body: JSON.stringify({ apps: selected }),
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        if (res.status === 401) { window.location.href = "/login"; return; }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) {
+          showError(data.error || "Google Workspace OAuth is not configured yet. Use the manual connector flow for now.");
+          connectBtn.disabled = false;
+          connectBtn.textContent = "Connect selected apps";
+          return;
+        }
+        window.location.href = data.url;
+      } catch {
+        showError("Could not start Google connection. Check your internet and try again.");
+        connectBtn.disabled = false;
+        connectBtn.textContent = "Connect selected apps";
+      }
+    });
+  </script>
+</body>
+</html>

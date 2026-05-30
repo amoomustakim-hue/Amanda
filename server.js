@@ -45,6 +45,19 @@ import {
   syncEvents as syncGoogleCalendarEvents,
 } from "./src/connectors/google-calendar.js";
 import {
+  appsFromScope,
+  decodeIdToken,
+  deriveConnectorStatus,
+  exchangeGoogleCode,
+  extractGoogleProfile,
+  googleAuthRedirectUri,
+  googleAuthSetupStatus,
+  googleAuthUrl,
+  googleWorkspaceRedirectUri,
+  googleWorkspaceUrl,
+  isGoogleAuthConfigured,
+} from "./src/auth-google.js";
+import {
   DEFAULT_SHEET_RANGES,
   exchangeSheetsCodeForTokens,
   getSheetsToken,
@@ -235,6 +248,8 @@ const pageMap = new Map([
   ["/onboarding/specialization", "onboarding-specialization.html"],
   ["/onboarding-specialization.html", "onboarding-specialization.html"],
   ["/onboarding/workspace", "onboarding-knowledge.html"],
+  ["/onboarding-google", "onboarding-google.html"],
+  ["/onboarding-google.html", "onboarding-google.html"],
   ["/settings", "settings.html"],
   ["/settings.html", "settings.html"],
   ["/signup", "signup.html"],
@@ -260,6 +275,8 @@ const protectedRoutes = new Set([
   "/onboarding/specialization",
   "/onboarding-specialization.html",
   "/onboarding/workspace",
+  "/onboarding-google",
+  "/onboarding-google.html",
   "/settings",
   "/settings.html",
   "/transcript",
@@ -1565,6 +1582,135 @@ async function handleApi(request, response) {
     return;
   }
 
+  // ── Google Sign-In: start ─────────────────────────────────────────────────
+  if (request.method === "GET" && url.pathname === "/api/auth/google/start") {
+    const setup = googleAuthSetupStatus();
+    if (!setup.configured) {
+      redirect(response, `/login?error=google_auth_not_configured`);
+      return;
+    }
+    const db = await loadDb();
+    const state = createOAuthState(db, null, "google_auth");
+    await queueWrite();
+    redirect(response, googleAuthUrl(state));
+    return;
+  }
+
+  // ── Google Sign-In: callback ──────────────────────────────────────────────
+  if (request.method === "GET" && url.pathname === "/api/auth/google/callback") {
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    if (!code || !state) { redirect(response, "/login?error=google_auth_missing_params"); return; }
+    const db = await loadDb();
+    const stateRecord = consumeOAuthState(db, state);
+    if (!stateRecord || stateRecord.connectorId !== "google_auth") {
+      await queueWrite();
+      redirect(response, "/login?error=google_auth_invalid_state");
+      return;
+    }
+    try {
+      const tokens = await exchangeGoogleCode(code, googleAuthRedirectUri());
+      const profile = extractGoogleProfile(decodeIdToken(tokens.id_token) || {});
+      if (!profile.sub || !profile.email) {
+        redirect(response, "/login?error=google_auth_profile_missing");
+        return;
+      }
+      // Find or create user
+      let user = db.users.find((u) => u.googleSub === profile.sub) ||
+                 db.users.find((u) => u.email === profile.email);
+      const now = new Date().toISOString();
+      if (user) {
+        user.googleSub = profile.sub;
+        user.avatarUrl = profile.avatarUrl || user.avatarUrl || "";
+        if (!user.name && profile.name) user.name = profile.name;
+        user.updatedAt = now;
+      } else {
+        user = {
+          avatarUrl: profile.avatarUrl,
+          company: "My Business",
+          createdAt: now,
+          email: profile.email,
+          googleSub: profile.sub,
+          id: makeId("user"),
+          name: profile.name || profile.email.split("@")[0],
+          updatedAt: now,
+        };
+        db.users.push(user);
+      }
+      ensureUserDefaults(db, user);
+      await queueWrite();
+      await createSession(response, user.id);
+      // New users → onboarding; returning users → workspace
+      const isNew = !user.updatedAt || user.createdAt === user.updatedAt ||
+        !(db.connectorsByUser[user.id] || []).some((c) => c.mode === "real");
+      redirect(response, isNew ? "/onboarding-google" : "/workspace");
+    } catch (error) {
+      console.warn(`Google auth callback failed: ${error.message}`);
+      await queueWrite();
+      redirect(response, "/login?error=google_auth_failed");
+    }
+    return;
+  }
+
+  // ── Google Workspace: callback (before auth guard, uses state for user) ───
+  if (request.method === "GET" && url.pathname === "/api/auth/google/workspace/callback") {
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    if (!code || !state) { redirect(response, "/connectors?error=google_workspace_missing_params"); return; }
+    const db = await loadDb();
+    const stateRecord = consumeOAuthState(db, state);
+    if (!stateRecord || stateRecord.connectorId !== "google_workspace") {
+      await queueWrite();
+      redirect(response, "/connectors?error=google_workspace_invalid_state");
+      return;
+    }
+    const targetUser = db.users.find((u) => u.id === stateRecord.userId);
+    if (!targetUser) { await queueWrite(); redirect(response, "/login?error=google_workspace_user_missing"); return; }
+    try {
+      const tokens = await exchangeGoogleCode(code, googleWorkspaceRedirectUri());
+      const scope = tokens.scope || "";
+      const connStatus = deriveConnectorStatus(scope);
+      ensureUserDefaults(db, targetUser);
+      // Store token under each granted connector ID using existing token system
+      if (connStatus.gmail) saveConnectorToken(db, targetUser.id, "gmail", tokens);
+      if (connStatus.calendar) saveConnectorToken(db, targetUser.id, "google_calendar", tokens);
+      if (connStatus.sheets) saveConnectorToken(db, targetUser.id, "google_sheets", tokens);
+      // Mark connectors connected
+      if (!Array.isArray(db.connectorsByUser[targetUser.id])) db.connectorsByUser[targetUser.id] = [];
+      const connectors = db.connectorsByUser[targetUser.id];
+      const connectedApps = appsFromScope(scope);
+      const idMap = { calendar: "google_calendar", gmail: "gmail", sheets: "google_sheets" };
+      for (const app of connectedApps) {
+        const connectorId = idMap[app];
+        if (!connectorId) continue;
+        let connector = connectors.find((c) => c.id === connectorId);
+        if (!connector) { connector = { id: connectorId }; connectors.push(connector); }
+        connector.mode = "real";
+        connector.status = "Connected";
+        connector.connectedAt = new Date().toISOString();
+        connector.scope = scope;
+      }
+      // Also mark Google Sheets data as connected
+      if (connStatus.sheets) {
+        const data = db.businessDataByUser[targetUser.id];
+        if (data) {
+          if (!data.googleSheets) data.googleSheets = {};
+          data.googleSheets.connected = true;
+        }
+      }
+      const tools = createAmandaTools({ businessData: db.businessDataByUser[targetUser.id], makeId, userId: targetUser.id });
+      tools.logAction("connectGoogleWorkspace", { apps: connectedApps, externalWrite: false, scope: scope.slice(0, 200) });
+      invalidateUserCache(targetUser.id);
+      await queueWrite();
+      redirect(response, `/connectors?connected=google_workspace&apps=${connectedApps.join(",")}`);
+    } catch (error) {
+      console.warn(`Google workspace callback failed: ${error.message}`);
+      await queueWrite();
+      redirect(response, "/connectors?error=google_workspace_failed");
+    }
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/connectors/google_calendar/callback") {
     const code = url.searchParams.get("code");
     const state = url.searchParams.get("state");
@@ -1787,6 +1933,41 @@ async function handleApi(request, response) {
 
   if (request.method === "GET" && url.pathname === "/api/auth/me") {
     sendJson(response, 200, { ok: true, user: sanitizeUser(user) });
+    return;
+  }
+
+  // ── Google Workspace: start (requires session) ────────────────────────────
+  if (request.method === "POST" && url.pathname === "/api/auth/google/workspace/start") {
+    const setup = googleAuthSetupStatus();
+    if (!setup.configured || !googleWorkspaceRedirectUri()) {
+      sendJson(response, 400, { ok: false, error: "Google Workspace OAuth is not configured.", missingEnv: setup.missingEnv });
+      return;
+    }
+    const body = await parseBody(request);
+    const apps = Array.isArray(body?.apps)
+      ? body.apps.filter((a) => ["gmail", "calendar", "sheets"].includes(a))
+      : [];
+    if (!apps.length) {
+      sendJson(response, 400, { ok: false, error: "Select at least one app to connect." });
+      return;
+    }
+    const db = await loadDb();
+    const state = createOAuthState(db, user.id, "google_workspace");
+    await queueWrite();
+    const authUrl = googleWorkspaceUrl(state, apps);
+    sendJson(response, 200, { ok: true, url: authUrl });
+    return;
+  }
+
+  // ── Google auth status (for UI) ───────────────────────────────────────────
+  if (request.method === "GET" && url.pathname === "/api/auth/google/status") {
+    const setup = googleAuthSetupStatus();
+    sendJson(response, 200, {
+      ok: true,
+      configured: setup.configured,
+      hasGoogleSub: Boolean(user.googleSub),
+      missingEnv: setup.configured ? [] : setup.missingEnv,
+    });
     return;
   }
 
