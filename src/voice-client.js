@@ -48,6 +48,7 @@ const appState = {
   tasks: [],
   transcriptEntries: [],
   transcriptOpen: false,
+  ttsProvider: "webspeech",
   user: null,
 };
 
@@ -70,6 +71,8 @@ let lastSentAt = 0;
 let lastSentTranscript = "";
 let manuallyStopped = false;
 let restartTimer = null;
+let thinkingTimer1 = null;
+let thinkingTimer2 = null;
 let voiceSessionActive = false;
 
 // Debug tracking
@@ -94,7 +97,24 @@ let debugData = {
   recognitionCount: 0,
   safetyDecision: "",
   duplicateBlocked: false,
+  ignoredBecauseSpeaking: false,
+  // latency
+  requestStartedAt: 0,
+  responseReceivedAt: 0,
+  backendLatencyMs: 0,
+  ttsRequestStartedAt: 0,
+  ttsAudioReceivedAt: 0,
+  ttsLatencyMs: 0,
+  speechStartedAt: 0,
+  speechEndedAt: 0,
+  speechDurationMs: 0,
+  totalTurnLatencyMs: 0,
+  // tts
+  ttsProvider: "",
+  ttsFallbackUsed: false,
+  voiceName: "",
 };
+
 const isDebugEnabled = () => {
   const isDev = document.body.dataset.nodeEnv === "development";
   const isDebugMode = document.body.dataset.debugVoice === "true";
@@ -114,7 +134,7 @@ function syncDebugVisibility() {
 
 function hasActiveClarification() {
   const value = String(debugData.pendingClarification || "").trim();
-  return Boolean(value && value !== "-" && value !== "—" && value !== "â€”");
+  return Boolean(value && value !== "-" && value !== "—" && value !== "—");
 }
 
 function isFillerOnly(transcript) {
@@ -134,25 +154,37 @@ function normalizeVoiceTranscript(transcript) {
 
 function debugSnapshot() {
   return {
+    // request identity
+    requestId: debugData.requestId || "",
+    rawTranscript: debugData.rawTranscript || "",
+    cleanTranscript: debugData.cleanedTranscript || "",
+    voiceState: debugData.voiceState || mode,
+    finalResult: Boolean(debugData.isFinal),
+    // safety flags
+    duplicateBlocked: Boolean(debugData.duplicateBlocked),
+    ignoredBecauseSpeaking: Boolean(debugData.ignoredBecauseSpeaking),
+    // routing
+    intent: debugData.intent || "",
+    confidence: debugData.confidence || "",
+    routedTo: debugData.routedTo || "",
+    brain: debugData.brain || "",
+    safetyDecision: debugData.safetyDecision || "",
+    usedFollowUpContext: Boolean(debugData.usedFollowupContext),
+    pendingClarification: debugData.pendingClarification || "",
+    // context
+    calendarParser: debugData.calendarParser || "",
+    gmailDebug: debugData.gmailDebug || "",
     approvalAction: debugData.approvalAction || "",
     approvalId: debugData.approvalId || "",
     backendReply: debugData.backendReply || "",
-    brain: debugData.brain || "",
-    calendarParser: debugData.calendarParser || "",
-    cleanTranscript: debugData.cleanedTranscript || "",
-    confidence: debugData.confidence || "",
-    duplicateBlocked: Boolean(debugData.duplicateBlocked),
-    finalResult: Boolean(debugData.isFinal),
-    gmailDebug: debugData.gmailDebug || "",
-    intent: debugData.intent || "",
-    pendingClarification: debugData.pendingClarification || "",
-    rawTranscript: debugData.rawTranscript || "",
-    recognitionCount: debugData.recognitionCount || 0,
-    requestId: debugData.requestId || "",
-    routedTo: debugData.routedTo || "",
-    safetyDecision: debugData.safetyDecision || "",
-    usedFollowUpContext: Boolean(debugData.usedFollowupContext),
-    voiceState: debugData.voiceState || mode,
+    // latency
+    backendLatencyMs: debugData.backendLatencyMs || 0,
+    ttsProvider: debugData.ttsProvider || "",
+    ttsFallbackUsed: Boolean(debugData.ttsFallbackUsed),
+    ttsLatencyMs: debugData.ttsLatencyMs || 0,
+    speechDurationMs: debugData.speechDurationMs || 0,
+    totalTurnLatencyMs: debugData.totalTurnLatencyMs || 0,
+    voiceName: debugData.voiceName || "",
   };
 }
 
@@ -207,7 +239,7 @@ function updateDebugPanel() {
 
   const update = (id, value) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = String(value || "—");
+    if (el) el.textContent = String(value ?? "—");
   };
 
   const updateHtml = (id, html) => {
@@ -223,6 +255,7 @@ function updateDebugPanel() {
   update("debug-final-result", debugData.isFinal);
   update("debug-recognition-count", debugData.recognitionCount);
   update("debug-duplicate-blocked", debugData.duplicateBlocked ? "YES" : "false");
+  update("debug-ignored-speaking", debugData.ignoredBecauseSpeaking ? "YES" : "false");
   update("debug-intent", debugData.intent || "—");
   update("debug-confidence", debugData.confidence ? `${Math.round(Number(debugData.confidence) * 100)}%` : "—");
   update("debug-routed-to", debugData.routedTo || "—");
@@ -250,6 +283,15 @@ function updateDebugPanel() {
   update("debug-approval-action", debugData.approvalAction || "—");
   update("debug-approval-id", debugData.approvalId || "—");
   update("debug-backend-reply", debugData.backendReply || "—");
+
+  // Latency
+  update("debug-backend-latency", debugData.backendLatencyMs ? `${debugData.backendLatencyMs}ms` : "—");
+  update("debug-tts-provider", debugData.ttsProvider || "—");
+  update("debug-tts-fallback", debugData.ttsFallbackUsed ? "YES" : "false");
+  update("debug-tts-latency", debugData.ttsLatencyMs ? `${debugData.ttsLatencyMs}ms` : "—");
+  update("debug-speech-duration", debugData.speechDurationMs ? `${debugData.speechDurationMs}ms` : "—");
+  update("debug-total-latency", debugData.totalTurnLatencyMs ? `${debugData.totalTurnLatencyMs}ms` : "—");
+  update("debug-voice-name", debugData.voiceName || "—");
 }
 
 function renderTasks() {
@@ -353,75 +395,44 @@ function renderEntryMeta(entry) {
   `;
 }
 
-function scoreVoiceForPreference(voice, preference) {
+function scoreVoice(voice) {
   const name = `${voice.name || ""} ${voice.voiceURI || ""}`.toLowerCase();
   const lang = (voice.lang || "").toLowerCase();
-
-  const femaleMatches = [
-    "female",
-    "woman",
-    "zira",
-    "aria",
-    "jenny",
-    "sonia",
-    "sara",
-    "samantha",
-    "victoria",
-    "natasha",
-    "libby",
-    "michelle",
-    "emma",
-    "olivia",
-    "ava",
-    "amy",
-    "luna",
-  ];
-
-  const maleMatches = [
-    "male",
-    "man",
-    "david",
-    "mark",
-    "guy",
-    "brian",
-    "ryan",
-    "christopher",
-    "george",
-  ];
-
   let score = 0;
 
-  if (lang.startsWith("en")) score += 2;
+  if (lang.startsWith("en-us")) score += 4;
+  else if (lang.startsWith("en")) score += 2;
+
+  if (name.includes("natural")) score += 5;
+  if (name.includes("online")) score += 4;
+  if (name.includes("neural")) score += 4;
+  if (name.includes("enhanced")) score += 3;
+  if (name.includes("google")) score += 3;
+  if (name.includes("microsoft")) score += 2;
+
+  const femaleNames = [
+    "female", "woman", "aria", "jenny", "sonia", "sara", "samantha",
+    "victoria", "natasha", "libby", "michelle", "emma", "olivia", "ava",
+    "amy", "luna", "zira",
+  ];
+  if (femaleNames.some((n) => name.includes(n))) score += 3;
+
   if (voice.default) score += 1;
-
-  if (preference === "Lumina Female") {
-    if (femaleMatches.some((token) => name.includes(token))) score += 10;
-    if (maleMatches.some((token) => name.includes(token))) score -= 6;
-  } else {
-    if (maleMatches.some((token) => name.includes(token))) score += 10;
-    if (femaleMatches.some((token) => name.includes(token))) score -= 6;
-  }
-
-  if (name.includes("natural")) score += 3;
-  if (name.includes("online")) score += 2;
   return score;
 }
 
-function chooseVoice(preference) {
+function chooseBestVoice() {
   const voices = availableVoices.length ? availableVoices : synth?.getVoices?.() || [];
   if (!voices.length) return null;
-
   return voices
     .slice()
-    .sort((a, b) => scoreVoiceForPreference(b, preference) - scoreVoiceForPreference(a, preference))[0];
+    .sort((a, b) => scoreVoice(b) - scoreVoice(a))[0] || null;
 }
 
 function primeVoices() {
   if (!synth) return;
   const loaded = synth.getVoices?.() || [];
-  if (loaded.length) {
-    availableVoices = loaded;
-  }
+  if (loaded.length) availableVoices = loaded;
 }
 
 function shouldAutoRestartListening() {
@@ -451,52 +462,165 @@ function restartListeningSoon(delay = 700) {
   }, delay);
 }
 
-async function speak(text) {
-  if (appState.isMuted || !synth) {
-    setMode("executing");
-    renderTasks();
-    return Promise.resolve();
-  }
+function startThinkingFeedback() {
+  clearThinkingFeedback();
+  thinkingTimer1 = window.setTimeout(() => {
+    if (mode === "thinking" && statusSubline) {
+      statusSubline.textContent = "Amanda is preparing a response...";
+    }
+  }, 1000);
+  thinkingTimer2 = window.setTimeout(() => {
+    if (mode === "thinking" && statusSubline) {
+      statusSubline.textContent = "Still working on it...";
+    }
+  }, 5000);
+}
 
+function clearThinkingFeedback() {
+  if (thinkingTimer1) { window.clearTimeout(thinkingTimer1); thinkingTimer1 = null; }
+  if (thinkingTimer2) { window.clearTimeout(thinkingTimer2); thinkingTimer2 = null; }
+}
+
+// Play a Blob of audio/mpeg and resolve when done. Falls back to Web Speech on error.
+function playAudioBlob(blob, fallbackText) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+
+    let settled = false;
+    const finish = (withFallback = false) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(failsafe);
+      URL.revokeObjectURL(url);
+      if (withFallback && fallbackText) {
+        debugData.ttsFallbackUsed = true;
+        speakFallback(fallbackText).then(resolve);
+      } else {
+        resolve();
+      }
+    };
+
+    const failsafe = setTimeout(() => finish(), 30000);
+    audio.onended = () => finish();
+    audio.onerror = () => finish(true);
+    audio.play().catch(() => finish(true));
+  });
+}
+
+// Web Speech fallback
+async function speakFallback(text) {
+  if (!synth || !text) return;
   synth.cancel();
   return new Promise((resolve) => {
     let settled = false;
     const finish = () => {
       if (settled) return;
       settled = true;
-      window.clearTimeout(failsafeTimer);
-      isAmandaSpeaking = false;
+      clearTimeout(failsafe);
       resolve();
     };
-    const estimatedMs = Math.min(30000, Math.max(5000, String(text || "").length * 55));
-    const failsafeTimer = window.setTimeout(() => {
-      try {
-        synth.cancel();
-      } catch {
-        // Ignore browser speech engine cleanup failures.
-      }
+
+    const estimatedMs = Math.min(30000, Math.max(5000, String(text).length * 55));
+    const failsafe = setTimeout(() => {
+      try { synth.cancel(); } catch { /* ignore */ }
       finish();
     }, estimatedMs);
+
     const utterance = new SpeechSynthesisUtterance(text);
-    const preferred = chooseVoice(appState.settings.voice);
-    if (preferred) utterance.voice = preferred;
-    utterance.rate = 1;
-    utterance.pitch = appState.settings.voice === "Lumina Female" ? 1.06 : 0.95;
-    utterance.onstart = () => {
-      isAmandaSpeaking = true;
-      setMode("speaking");
-    };
+    const chosen = chooseBestVoice();
+    if (chosen) {
+      utterance.voice = chosen;
+      debugData.voiceName = chosen.name;
+    } else {
+      debugData.voiceName = "browser default";
+    }
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
     utterance.onend = finish;
     utterance.onerror = finish;
     synth.speak(utterance);
-    window.setTimeout(() => {
-      try {
-        if (synth.paused) synth.resume();
-      } catch {
-        // Some browsers throw when the speech engine is unavailable.
-      }
+
+    setTimeout(() => {
+      try { if (synth.paused) synth.resume(); } catch { /* ignore */ }
     }, 250);
   });
+}
+
+// Try backend TTS (ElevenLabs) then fallback to Web Speech
+async function speakWithProvider(text) {
+  const ttsStart = Date.now();
+  debugData.ttsRequestStartedAt = ttsStart;
+  debugData.ttsFallbackUsed = false;
+  debugData.ttsProvider = appState.ttsProvider || "webspeech";
+
+  // Skip backend call when provider is webspeech — no round-trip needed
+  if (appState.ttsProvider !== "elevenlabs") {
+    debugData.ttsProvider = "webspeech";
+    debugData.ttsFallbackUsed = false;
+    await speakFallback(text);
+    return;
+  }
+
+  try {
+    const controller = new AbortController();
+    const ttsTimeout = setTimeout(() => controller.abort(), 12000);
+    let ttsResponse;
+    try {
+      ttsResponse = await fetch("/api/tts/speak", {
+        body: JSON.stringify({ text }),
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(ttsTimeout);
+    }
+
+    const contentType = ttsResponse.headers.get("content-type") || "";
+    if (ttsResponse.ok && contentType.includes("audio/mpeg")) {
+      debugData.ttsProvider = "elevenlabs";
+      debugData.ttsAudioReceivedAt = Date.now();
+      debugData.ttsLatencyMs = debugData.ttsAudioReceivedAt - ttsStart;
+      debugData.voiceName = "ElevenLabs";
+      const blob = await ttsResponse.blob();
+      await playAudioBlob(blob, text);
+      return;
+    }
+    // Backend returned fallback JSON (not_configured / error)
+    debugData.ttsFallbackUsed = true;
+    debugData.ttsProvider = "elevenlabs";
+  } catch {
+    debugData.ttsFallbackUsed = true;
+    debugData.ttsProvider = "elevenlabs";
+  }
+
+  await speakFallback(text);
+}
+
+// Main speak orchestrator
+async function speak(text) {
+  if (!text?.trim()) return;
+  if (appState.isMuted) return;
+
+  isAmandaSpeaking = true;
+  setMode("speaking");
+  debugData.speechStartedAt = Date.now();
+
+  try {
+    await speakWithProvider(text);
+  } finally {
+    isAmandaSpeaking = false;
+    const now = Date.now();
+    debugData.speechEndedAt = now;
+    debugData.speechDurationMs = now - (debugData.speechStartedAt || now);
+    if (debugData.requestStartedAt) {
+      debugData.totalTurnLatencyMs = now - debugData.requestStartedAt;
+    }
+    updateDebugPanel();
+  }
 }
 
 async function submitTranscript(transcript) {
@@ -519,23 +643,31 @@ async function submitTranscript(transcript) {
     debugData.rawTranscript = transcript;
     debugData.cleanedTranscript = cleanTranscript;
     debugData.duplicateBlocked = true;
+    debugData.ignoredBecauseSpeaking = false;
     updateDebugPanel();
     setMode("listening", "Already handling that request. Listening again...");
     restartListeningSoon(700);
     return;
   }
+
   debugData.duplicateBlocked = false;
+  debugData.ignoredBecauseSpeaking = false;
   lastSentTranscript = cleanTranscript;
   lastSentAt = now;
   isThinking = true;
   setMode("thinking");
+  startThinkingFeedback();
 
-  // Generate request ID and track timing
   debugData.requestId = `voice_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  debugData.requestStartedAt = Date.now();
   debugData.rawTranscript = transcript;
   debugData.cleanedTranscript = cleanTranscript;
   debugData.lastSentTime = new Date().toLocaleTimeString();
   debugData.isFinal = true;
+  debugData.backendLatencyMs = 0;
+  debugData.ttsLatencyMs = 0;
+  debugData.speechDurationMs = 0;
+  debugData.totalTurnLatencyMs = 0;
   updateDebugPanel();
 
   try {
@@ -543,12 +675,14 @@ async function submitTranscript(transcript) {
       transcript: cleanTranscript,
       requestId: debugData.requestId,
     });
+    clearThinkingFeedback();
+
     if (!result) return;
 
-    // Extract debug info from response
-    if (result.requestId) {
-      debugData.requestId = result.requestId;
-    }
+    debugData.responseReceivedAt = Date.now();
+    debugData.backendLatencyMs = debugData.responseReceivedAt - debugData.requestStartedAt;
+
+    if (result.requestId) debugData.requestId = result.requestId;
     if (result.agent) {
       debugData.intent = result.agent.intent || "";
       debugData.confidence = result.agent.confidence || "";
@@ -600,12 +734,14 @@ async function submitTranscript(transcript) {
       debugData.gmailDebug = lines.join("\n") || "—";
     }
 
-    debugData.backendReply = result.reply || "—";
+    // Normalize reply — handle different backend shapes safely
+    const reply =
+      String(result.reply || result.spokenReply || result.message || "").trim() ||
+      "I could not generate a reply for that. Please try again.";
+    debugData.backendReply = reply;
 
-    // Log to console in development
     if (isDebugEnabled()) {
-      const logMsg = `[VOICE DEBUG] requestId="${debugData.requestId}" transcript="${cleanTranscript}" intent="${debugData.intent}" confidence=${debugData.confidence} routedTo="${debugData.routedTo}" followUp=${debugData.usedFollowupContext} state="${mode}"`;
-      console.log(logMsg);
+      console.log(`[VOICE DEBUG] requestId="${debugData.requestId}" transcript="${cleanTranscript}" intent="${debugData.intent}" confidence=${debugData.confidence} routedTo="${debugData.routedTo}" backendLatency=${debugData.backendLatencyMs}ms followUp=${debugData.usedFollowupContext} state="${mode}"`);
     }
 
     updateDebugPanel();
@@ -629,7 +765,7 @@ async function submitTranscript(transcript) {
     renderTranscriptPreview();
     renderTranscriptDrawer();
     setMode("speaking");
-    await speak(result.reply);
+    await speak(reply);
     setMode(
       shouldAutoRestartListening() ? "listening" : "executing",
       shouldAutoRestartListening()
@@ -637,11 +773,21 @@ async function submitTranscript(transcript) {
         : "Amanda finished the reply.",
     );
   } catch (error) {
-    setMode("error", error.message || "Unable to reach Amanda right now.");
+    clearThinkingFeedback();
+    const message = error?.message || "";
+    if (message.includes("401") || message.includes("Unauthorized")) {
+      setMode("error", "Session expired. Please log in again.");
+    } else if (message.includes("500") || message.includes("502")) {
+      setMode("error", "Amanda's server returned an error. Please try again.");
+    } else if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+      setMode("error", "Network error. Check your connection and try again.");
+    } else {
+      setMode("error", message || "Unable to reach Amanda right now.");
+    }
   } finally {
     isThinking = false;
     if (shouldAutoRestartListening()) {
-      restartListeningSoon(700);
+      restartListeningSoon(600);
     } else if (voiceSessionActive && !manuallyStopped && mode !== "error") {
       setMode("paused");
     } else if (!voiceSessionActive) {
@@ -652,6 +798,7 @@ async function submitTranscript(transcript) {
 
 function stopVoiceSession({ cancelSpeech = false } = {}) {
   clearRestartTimer();
+  clearThinkingFeedback();
   manuallyStopped = true;
   voiceSessionActive = false;
   autoListenEnabled = false;
@@ -674,7 +821,7 @@ function stopVoiceSession({ cancelSpeech = false } = {}) {
 
 function startRecognition() {
   if (!Recognition) {
-    setMode("error", "Voice capture is not available in this browser. Use Chrome or Edge.");
+    setMode("error", "Speech recognition is not supported in this browser. Please use Chrome.");
     return;
   }
   if (appState.isRecording || isThinking || isAmandaSpeaking) return;
@@ -694,7 +841,12 @@ function startRecognition() {
     };
 
     recognition.onresult = (event) => {
-      if (isAmandaSpeaking || mode === "speaking") return;
+      if (isAmandaSpeaking || mode === "speaking") {
+        debugData.ignoredBecauseSpeaking = true;
+        updateDebugPanel();
+        return;
+      }
+      debugData.ignoredBecauseSpeaking = false;
       debugData.recognitionCount = event.results.length;
       let finalTranscript = "";
       let interimTranscript = "";
@@ -756,13 +908,13 @@ function startRecognition() {
       if (lastRecognitionError === "not-allowed") {
         voiceSessionActive = false;
         autoListenEnabled = false;
-        setMode("error", "Microphone permission is blocked. Allow microphone access to use voice mode.");
+        setMode("error", "Microphone permission is blocked. Please allow mic access in your browser settings.");
         return;
       }
       if (lastRecognitionError === "audio-capture") {
         voiceSessionActive = false;
         autoListenEnabled = false;
-        setMode("error", "No microphone was detected.");
+        setMode("error", "No microphone detected.");
         return;
       }
       if (shouldAutoRestartListening()) {
@@ -891,11 +1043,11 @@ async function bootstrapVoice() {
   if (bootstrap) {
     appState.settings = bootstrap.settings || appState.settings;
     appState.tasks = bootstrap.tasks || [];
+    appState.ttsProvider = String(bootstrap.ttsProvider || "webspeech").toLowerCase();
     appState.user = bootstrap.user;
     if (workspaceLabel) {
       workspaceLabel.textContent = `Sales & Operations AI • ${bootstrap.user.company}`;
     }
-    // Store env flags for debug panel
     document.body.dataset.nodeEnv = bootstrap.nodeEnv || "production";
     document.body.dataset.debugVoice = bootstrap.debugVoice ? "true" : "false";
     syncDebugVisibility();
@@ -934,7 +1086,6 @@ document.getElementById("voice-close-transcript")?.addEventListener("click", () 
   renderTranscriptDrawer();
 });
 
-// Debug panel toggle
 const debugToggle = document.getElementById("voice-debug-toggle");
 const debugPanel = document.getElementById("voice-debug-panel");
 const debugClose = document.getElementById("voice-debug-close");
@@ -959,15 +1110,11 @@ debugCopy?.addEventListener("click", async () => {
   try {
     await navigator.clipboard?.writeText(payload);
     debugCopy.textContent = "Copied";
-    window.setTimeout(() => {
-      debugCopy.textContent = "Copy Debug JSON";
-    }, 1200);
+    window.setTimeout(() => { debugCopy.textContent = "Copy Debug JSON"; }, 1200);
   } catch {
     console.log(payload);
     debugCopy.textContent = "Logged";
-    window.setTimeout(() => {
-      debugCopy.textContent = "Copy Debug JSON";
-    }, 1200);
+    window.setTimeout(() => { debugCopy.textContent = "Copy Debug JSON"; }, 1200);
   }
 });
 
@@ -1002,7 +1149,5 @@ bootstrapVoice().catch((error) => {
 
 primeVoices();
 if (synth && "onvoiceschanged" in synth) {
-  synth.onvoiceschanged = () => {
-    primeVoices();
-  };
+  synth.onvoiceschanged = () => { primeVoices(); };
 }
