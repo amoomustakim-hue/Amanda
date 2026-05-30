@@ -490,9 +490,7 @@ export function createAmandaTools({ businessData, makeId = makeLocalId, now = ()
   }
 
   function gmailFindImportantEmails(filters = {}) {
-    const result = gmailMessages(filters).filter(
-      (message) => message.priority === "high" || message.needsReply,
-    );
+    const result = gmailMessages(filters).filter((message) => gmailIsDraftableMessage(message));
     logAction("gmailFindImportantEmails", { count: result.length, filters });
     return result;
   }

@@ -125,6 +125,13 @@ function isFillerOnly(transcript) {
   return false;
 }
 
+function normalizeVoiceTranscript(transcript) {
+  return String(transcript || "")
+    .replace(/\bdraught\b/gi, "draft")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function debugSnapshot() {
   return {
     approvalAction: debugData.approvalAction || "",
@@ -493,7 +500,7 @@ async function speak(text) {
 }
 
 async function submitTranscript(transcript) {
-  const cleanTranscript = String(transcript || "").replace(/\s+/g, " ").trim();
+  const cleanTranscript = normalizeVoiceTranscript(transcript);
   if (!cleanTranscript) return;
   if (isFillerOnly(cleanTranscript)) {
     debugData.rawTranscript = transcript;
