@@ -15,6 +15,7 @@
     "test:attention-engine": "node scripts/test-attention-engine.mjs"
   },
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "material-symbols": "^0.44.10"
   }
 }

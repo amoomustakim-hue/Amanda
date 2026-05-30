@@ -5,57 +5,14 @@
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="/src/styles.css?v=ui-consistency-1" rel="stylesheet" />
+  <link href="/src/main.css" rel="stylesheet" />
+    <link href="/src/styles.css" rel="stylesheet" />
   <link
     href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap"
     rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-    rel="stylesheet" />
+  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-  <style>
-    body {
-      background-color: #050505;
-      color: #e5e2e1;
-      font-family: "Geist", sans-serif;
-      overflow: hidden;
-    }
-
-    .glass-panel {
-      background: rgba(10, 10, 10, 0.7);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      transition: opacity 0.5s ease, transform 0.5s ease;
-    }
-
-    .orb-glow {
-      filter: blur(60px);
-      background: radial-gradient(circle, rgba(0, 240, 255, 0.3) 0%, rgba(0, 240, 255, 0) 70%);
-    }
-
-    canvas {
-      display: block;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), height 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      pointer-events: none;
-    }
-
-    .immersive-mode .dim-target,
-    .immersive-mode #voice-transcript-shell,
-    .immersive-mode nav,
-    .immersive-mode #voice-transcript-drawer {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .immersive-mode #particle-container {
-      transform: translate(-50%, -50%) scale(1.72);
-    }
-  </style>
-  <script id="tailwind-config">
+    <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
       theme: {
@@ -95,11 +52,21 @@
   </script>
 </head>
 
-<body
-  class="h-screen w-full flex flex-col relative overflow-hidden selection:bg-primary-container selection:text-on-primary-container"
-  id="main-body">
+<body class="min-h-screen w-full flex flex-col relative selection:bg-primary-container selection:text-on-primary-container" id="main-body">
   <header class="fixed top-0 left-0 right-0 z-50 pt-10 dim-target">
-    <div class="flex justify-between items-center w-full px-10 max-w-[1440px] mx-auto">
+    <div class="flex flex-row-reverse justify-between items-center w-full px-10 max-w-[1440px] mx-auto">
+      <div class="flex items-center gap-3">
+        <div class="glass-panel p-2 rounded-lg flex items-center gap-1">
+          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
+            href="/transcript"><span class="material-symbols-outlined text-[20px]">description</span></a>
+          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
+            href="/workspace"><span class="material-symbols-outlined text-[20px]">handyman</span></a>
+          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
+            href="/settings"><span class="material-symbols-outlined text-[20px]">settings</span></a>
+        </div>
+        <a class="glass-panel p-2 rounded-lg text-on-surface-variant hover:text-primary transition-colors"
+          href="/dashboard"><span class="material-symbols-outlined text-[20px]">minimize</span></a>
+      </div>
       <div class="glass-panel rounded-xl p-4 flex items-center gap-4">
         <div
           class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center border border-primary-container/30">
@@ -121,18 +88,7 @@
             CodedDevs Demo</p>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <div class="glass-panel p-2 rounded-lg flex items-center gap-1">
-          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
-            href="/transcript"><span class="material-symbols-outlined text-[20px]">description</span></a>
-          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
-            href="/workspace"><span class="material-symbols-outlined text-[20px]">handyman</span></a>
-          <a class="p-2 hover:bg-white/5 rounded-md transition-colors text-on-surface-variant hover:text-primary"
-            href="/settings"><span class="material-symbols-outlined text-[20px]">settings</span></a>
-        </div>
-        <a class="glass-panel p-2 rounded-lg text-on-surface-variant hover:text-primary transition-colors"
-          href="/dashboard"><span class="material-symbols-outlined text-[20px]">minimize</span></a>
-      </div>
+      
     </div>
   </header>
 
@@ -149,14 +105,14 @@
       class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] z-0 transition-all duration-700"
       id="particle-container"></div>
 
-    <div class="absolute bottom-[20%] text-center z-10 transition-transform duration-700" id="status-text">
+    <div class="absolute top-[20%] text-center z-10 transition-transform duration-700" id="status-text">
       <h2 class="text-display-lg font-display-lg text-primary tracking-tighter mb-2" id="voice-status-heading">Ready
       </h2>
       <p class="text-body-lg text-on-surface-variant/80 font-body-lg" id="voice-status-subline">Tell Amanda what you
         want done</p>
     </div>
 
-    <div class="mt-auto mb-40 flex gap-4 items-center overflow-hidden dim-target" id="voice-task-strip">
+    <div class="absolute bottom-28 left-1/2 -translate-x-1/2 flex gap-4 items-center overflow-hidden dim-target" id="voice-task-strip">
       <div class="glass-panel px-4 py-2 rounded-full flex items-center gap-3">
         <span class="material-symbols-outlined text-primary-fixed-dim text-[16px]">hub</span>
         <span class="text-label-sm font-label-sm text-on-surface-variant">Waiting for the next instruction...</span>
@@ -165,7 +121,7 @@
   </main>
 
   <div
-    class="absolute bottom-32 left-1/2 -translate-x-1/2 w-full max-w-3xl px-10 flex flex-col gap-6 pointer-events-none z-20"
+    class="absolute bottom-[35%] left-1/2 -translate-x-1/2 w-full max-w-3xl px-10 flex flex-col gap-6 pointer-events-none z-20"
     id="voice-transcript-shell">
     <div class="flex justify-end w-full">
       <div class="max-w-[80%] px-6 py-4 rounded-2xl glass-panel bg-white/5 border-white/10 text-on-surface">
@@ -186,16 +142,16 @@
     <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
       href="/dashboard"><span
         class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform text-error/80">call_end</span><span
-        class="text-label-sm font-label-sm uppercase tracking-widest">End Session</span></a>
+        class="text-label-sm font-label-sm mt-1">End Session</span></a>
     <button
       class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
       id="mute-btn" type="button"><span
         class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform">mic_off</span><span
-        class="text-label-sm font-label-sm uppercase tracking-widest">Mute</span></button>
+        class="text-label-sm font-label-sm mt-1">Mute</span></button>
     <button
-      class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-20 h-20 shadow-[0_0_30px_rgba(0,240,255,0.4)] scale-110 -mt-2 group transition-all duration-300"
+      class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full w-14 h-14 shadow-[0_0_20px_rgba(0,240,255,0.4)] scale-110 transition-transform group dim-target"
       id="mic-btn" type="button">
-      <span class="material-symbols-outlined text-[32px] font-bold" id="mic-icon"
+      <span class="material-symbols-outlined" id="mic-icon"
         style="font-variation-settings:'FILL' 1;">mic</span>
       <div class="absolute inset-0 rounded-full border-2 border-white/20 animate-ping opacity-20"></div>
     </button>
@@ -203,12 +159,34 @@
       class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
       id="transcript-btn" type="button"><span
         class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform">receipt_long</span><span
-        class="text-label-sm font-label-sm uppercase tracking-widest">Transcripts</span></button>
-    <a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
-      href="/settings"><span
+        class="text-label-sm font-label-sm mt-1">Transcripts</span></button>
+    <button
+      class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-4 hover:text-on-surface hover:bg-white/5 transition-all group dim-target"
+      id="keyboard-btn" type="button"><span
         class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform">keyboard</span><span
-        class="text-label-sm font-label-sm uppercase tracking-widest">Keyboard</span></a>
+        class="text-label-sm font-label-sm mt-1">Keyboard</span></button>
   </nav>
+
+  <div
+    class="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 z-50 hidden"
+    id="voice-keyboard-input-container">
+    <div class="glass-panel p-4 rounded-2xl flex flex-col gap-3 shadow-2xl border-primary/20 bg-surface-container/80 backdrop-blur-xl">
+      <textarea
+        id="voice-keyboard-input"
+        class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/50 resize-none font-body-md min-h-[5vh] max-h-[10vh] overflow-y-auto"
+        placeholder="Type your instruction..."></textarea>
+      <div class="flex justify-end gap-3">
+        <button
+          id="voice-keyboard-cancel"
+          class="px-4 py-2 text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          type="button">Cancel</button>
+        <button
+          id="voice-keyboard-submit"
+          class="px-6 py-2 bg-primary text-on-primary rounded-xl text-label-sm font-label-sm hover:opacity-90 transition-opacity shadow-[0_0_20px_rgba(0,240,255,0.2)]"
+          type="button">Send</button>
+      </div>
+    </div>
+  </div>
 
   <div
     class="fixed left-10 top-1/2 -translate-y-1/2 flex flex-col gap-8 items-center py-8 glass-panel rounded-full w-12 opacity-40 dim-target">
@@ -372,7 +350,7 @@
     class="hidden fixed left-10 bottom-10 z-50 px-3 py-2 text-xs font-label-sm rounded bg-primary/20 border border-primary/40 text-primary hover:bg-primary/30 transition-colors"
     id="voice-debug-toggle" type="button">Debug</button>
 
-  <script src="/src/voice-client.js?v=voice-reply-fix-1" type="module"></script>
+  <script src="/src/voice-client.js?v=voice-reply-fix-2" type="module"></script>
 </body>
 
 </html>

@@ -4,38 +4,19 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="/src/styles.css?v=ui-consistency-1" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="/src/main.css" rel="stylesheet" />
+    <link href="/src/styles.css" rel="stylesheet" />
+    
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <title>Amanda AI - Settings</title>
     <script id="tailwind-config">
       tailwind.config = { darkMode: "class", theme: { extend: { colors: { "secondary-container": "#026bd2", "on-primary-container": "#006970", "surface-container": "#201f1f", "inverse-surface": "#e5e2e1", "on-tertiary-container": "#516073", "on-surface-variant": "#b9cacb", "surface-container-high": "#2a2a2a", "surface-tint": "#00dbe9", surface: "#131313", "primary-container": "#00f0ff", primary: "#dbfcff", "secondary-fixed": "#d6e3ff", "on-secondary-fixed": "#001b3e", "surface-dim": "#131313", tertiary: "#f2f6ff", "on-secondary-fixed-variant": "#00468c", "on-error": "#690005", background: "#131313", "on-tertiary-fixed": "#0d1c2d", "outline-variant": "#3b494b", "surface-container-low": "#1c1b1b", "tertiary-container": "#ccdbf1", "secondary-fixed-dim": "#a9c7ff", "on-primary": "#00363a", "tertiary-fixed-dim": "#b9c8de", "surface-container-highest": "#353534", outline: "#849495", "on-tertiary-fixed-variant": "#39485a", "on-secondary-container": "#ebf0ff", "surface-variant": "#353534", "on-tertiary": "#233143", "inverse-on-surface": "#313030", "on-secondary": "#003064", "inverse-primary": "#006970", "surface-bright": "#3a3939", "primary-fixed": "#7df4ff", "on-background": "#e5e2e1", "surface-container-lowest": "#0e0e0e", "primary-fixed-dim": "#00dbe9", secondary: "#a9c7ff", "on-error-container": "#ffdad6", "on-surface": "#e5e2e1", "on-primary-fixed-variant": "#004f54", error: "#ffb4ab", "tertiary-fixed": "#d4e4fa", "on-primary-fixed": "#002022", "error-container": "#93000a" }, borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" }, spacing: { "margin-mobile": "16px", "margin-desktop": "40px", unit: "8px", gutter: "24px", "container-max": "1440px" }, fontFamily: { "display-lg": ["Geist"], "body-lg": ["Geist"], "headline-lg": ["Geist"], "body-md": ["Geist"], "headline-md": ["Geist"], "label-sm": ["JetBrains Mono"], "label-md": ["JetBrains Mono"], "headline-lg-mobile": ["Geist"] }, fontSize: { "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.04em", fontWeight: "600" }], "body-lg": ["18px", { lineHeight: "1.6", fontWeight: "400" }], "headline-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "500" }], "body-md": ["16px", { lineHeight: "1.6", fontWeight: "400" }], "headline-md": ["24px", { lineHeight: "1.3", fontWeight: "500" }], "label-sm": ["12px", { lineHeight: "1.0", letterSpacing: "0.05em", fontWeight: "400" }], "label-md": ["14px", { lineHeight: "1.0", letterSpacing: "0.05em", fontWeight: "500" }], "headline-lg-mobile": ["24px", { lineHeight: "1.2", letterSpacing: "-0.01em", fontWeight: "500" }] } } } };
     </script>
-    <style>
-      body { background-color: #050505; color: #e5e2e1; font-family: "Geist", sans-serif; overflow-x: hidden; }
-      .glass-panel { background: rgba(10, 10, 10, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.08); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
-      .glow-cyan { box-shadow: 0 0 32px rgba(0,240,255,.15); }
-      .primary-btn-glow:hover { box-shadow: 0 0 15px rgba(0,240,255,.4); }
-      .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24; }
-      ::-webkit-scrollbar { width: 4px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 10px; }
-    </style>
-  </head>
+      </head>
   <body class="min-h-screen">
-    <header class="fixed top-0 left-0 right-0 z-50 bg-opacity-0">
+    <header class="bg-opacity-0">
       <div class="flex justify-between items-center w-full px-margin-desktop max-w-container-max mx-auto h-20">
         <a class="text-headline-md font-headline-md font-medium tracking-tight text-on-surface" href="/">Amanda</a>
-        <nav class="hidden md:flex items-center gap-8">
-          <a class="text-on-surface-variant font-medium text-label-md font-label-md hover:text-primary transition-colors duration-300" href="/voice">Voice</a>
-          <a class="text-on-surface-variant font-medium text-label-md font-label-md hover:text-primary transition-colors duration-300" href="/workspace">Workspace</a>
-        </nav>
-        <div class="flex items-center gap-4">
-          <a class="material-symbols-outlined text-primary-fixed-dim font-bold transition-all hover:scale-110" href="/settings">settings</a>
-          <a class="material-symbols-outlined text-on-surface-variant font-medium hover:text-primary transition-all" href="/workspace">handyman</a>
-          <a class="material-symbols-outlined text-on-surface-variant font-medium hover:text-primary transition-all" href="/transcript">description</a>
-          <a class="material-symbols-outlined text-on-surface-variant font-medium hover:text-primary transition-all" href="/dashboard">minimize</a>
-        </div>
       </div>
     </header>
     <main class="pt-32 pb-40 px-margin-desktop max-w-container-max mx-auto min-h-screen">

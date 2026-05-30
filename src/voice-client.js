@@ -922,6 +922,42 @@ transcriptButton?.addEventListener("click", () => {
   renderTranscriptDrawer();
 });
 
+const keyboardBtn = document.getElementById("keyboard-btn");
+const keyboardInputContainer = document.getElementById("voice-keyboard-input-container");
+const keyboardInput = document.getElementById("voice-keyboard-input");
+const keyboardSubmit = document.getElementById("voice-keyboard-submit");
+const keyboardCancel = document.getElementById("voice-keyboard-cancel");
+
+keyboardBtn?.addEventListener("click", () => {
+  keyboardInputContainer?.classList.toggle("hidden");
+  if (!keyboardInputContainer?.classList.contains("hidden")) {
+    keyboardInput?.focus();
+    if (voiceSessionActive) {
+      stopVoiceSession({ cancelSpeech: false });
+    }
+  }
+});
+
+keyboardCancel?.addEventListener("click", () => {
+  keyboardInputContainer?.classList.add("hidden");
+});
+
+keyboardSubmit?.addEventListener("click", async () => {
+  const text = keyboardInput?.value.trim();
+  if (text) {
+    keyboardInputContainer?.classList.add("hidden");
+    keyboardInput.value = "";
+    await submitTranscript(text);
+  }
+});
+
+keyboardInput?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    keyboardSubmit?.click();
+  }
+});
+
 document.getElementById("voice-close-transcript")?.addEventListener("click", () => {
   appState.transcriptOpen = false;
   renderTranscriptDrawer();
