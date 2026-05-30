@@ -392,6 +392,7 @@ function bootstrapForUser(db, user) {
     demoMode: isDemoMode(),
     integrations: isDemoMode() ? db.integrationsByUser[user.id] : visibleRecords(db.integrationsByUser[user.id] || []),
     nodeEnv: process.env.NODE_ENV || "production",
+    ttsProvider: String(process.env.AMANDA_TTS_PROVIDER || "webspeech").toLowerCase(),
     settings: db.settingsByUser[user.id],
     tasks: isDemoMode() ? db.tasksByUser[user.id] : visibleRecords(db.tasksByUser[user.id] || []),
     transcriptPreview: db.transcriptsByUser[user.id].slice(-6),
@@ -2500,6 +2501,78 @@ async function handleApi(request, response) {
     invalidateUserCache(user.id);
     await queueWrite();
     sendJson(response, 200, { ok: true, settings: nextSettings });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/tts/speak") {
+    const body = await parseBody(request);
+    const rawText = String(body?.text || "").trim();
+    if (!rawText) {
+      sendJson(response, 400, { ok: false, error: "text is required" });
+      return;
+    }
+    const safeText = rawText.slice(0, 1200);
+    const provider = String(process.env.AMANDA_TTS_PROVIDER || "webspeech").toLowerCase();
+    if (provider !== "elevenlabs") {
+      sendJson(response, 200, { ok: false, fallback: true, reason: "tts_provider_disabled" });
+      return;
+    }
+    const elevenKey = process.env.ELEVENLABS_API_KEY;
+    const elevenVoiceId = process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL";
+    const elevenModelId = process.env.ELEVENLABS_MODEL_ID || "eleven_turbo_v2";
+    const elevenOutputFormat = process.env.ELEVENLABS_OUTPUT_FORMAT || "mp3_44100_128";
+    if (!elevenKey) {
+      sendJson(response, 200, { ok: false, fallback: true, reason: "elevenlabs_not_configured" });
+      return;
+    }
+    try {
+      const controller = new AbortController();
+      const ttsTimeout = setTimeout(() => controller.abort(), 13000);
+      const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(elevenVoiceId)}/stream?output_format=${encodeURIComponent(elevenOutputFormat)}`;
+      const ttsRes = await fetch(ttsUrl, {
+        body: JSON.stringify({
+          model_id: elevenModelId,
+          text: safeText,
+          voice_settings: {
+            similarity_boost: 0.85,
+            stability: 0.4,
+            style: 0.3,
+            use_speaker_boost: true,
+          },
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": elevenKey,
+        },
+        method: "POST",
+        signal: controller.signal,
+      });
+      clearTimeout(ttsTimeout);
+      if (!ttsRes.ok) {
+        const errStatus = ttsRes.status;
+        if (!response.headersSent) {
+          sendJson(response, 502, { ok: false, fallback: true, reason: "elevenlabs_error", status: errStatus });
+        }
+        return;
+      }
+      response.writeHead(200, {
+        "Cache-Control": "no-store",
+        "Content-Type": "audio/mpeg",
+      });
+      const reader = ttsRes.body.getReader();
+      const pump = async () => {
+        const { done, value } = await reader.read();
+        if (done) { response.end(); return; }
+        response.write(value);
+        await pump();
+      };
+      await pump();
+    } catch (error) {
+      if (!response.headersSent) {
+        const reason = error?.name === "AbortError" ? "elevenlabs_timeout" : "elevenlabs_unavailable";
+        sendJson(response, 502, { ok: false, fallback: true, reason });
+      }
+    }
     return;
   }
 
