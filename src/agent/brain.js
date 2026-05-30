@@ -181,6 +181,11 @@ const routedIntentMap = {
   website_failed_payments: "website_events",
   website_high_value_leads: "website_events",
   website_summary: "website_events",
+  sheets_customer_issues: "sheets_summary",
+  sheets_focus_recommendation: "sheets_summary",
+  sheets_low_stock: "sheets_summary",
+  sheets_summary: "sheets_summary",
+  sheets_top_product: "sheets_summary",
 };
 
 function classifyIntent(message, memory = {}) {
@@ -1110,6 +1115,61 @@ function buildLocalResponse({ user, message, workspace, settings, transcripts, b
         memoryNote = `User asked about ${filterLabel} website events.`;
       }
     }
+  } else if (intent.id === "sheets_summary") {
+    const routedIntent = intent.routedIntent || "sheets_summary";
+    const sheetsState = data.googleSheets || {};
+    const sheetsSummary = sheetsState.summary || null;
+
+    if (!sheetsState.spreadsheetId) {
+      reply = "Google Sheets is not configured yet. Add a Spreadsheet ID in Connectors, then sync it and I will summarize your store data.";
+    } else if (!sheetsState.lastSyncedAt || !sheetsSummary) {
+      reply = "Google Sheets is connected, but I need you to sync the sheet first. Go to the Connectors page and click Sync Sheet.";
+    } else if (routedIntent === "sheets_top_product") {
+      if (sheetsSummary.topProduct) {
+        reply = `Your top-selling product from the sheet is ${sheetsSummary.topProduct} with ₦${(sheetsSummary.topProductRevenue || 0).toLocaleString("en-NG")} revenue. I recommend promoting it today.`;
+      } else {
+        reply = "I synced your sheet but could not identify a top product. Make sure the Products tab has Name and Revenue columns.";
+      }
+    } else if (routedIntent === "sheets_low_stock") {
+      const items = sheetsSummary.lowStockItems || [];
+      if (items.length === 0) {
+        reply = "Your sheet shows no critically low stock items right now.";
+      } else {
+        reply = `Your sheet shows ${items.length} low-stock item${items.length === 1 ? "" : "s"}: ${items.slice(0, 3).map((i) => `${i.name} (${i.stock} units left)`).join(", ")}. Restock these soon to avoid losing sales.`;
+      }
+    } else if (routedIntent === "sheets_customer_issues") {
+      const issues = sheetsSummary.customerIssues || [];
+      if (issues.length === 0) {
+        reply = "Your customer issues sheet looks clear — no issues found.";
+      } else {
+        const high = issues.filter((i) => i.priority === "high" || i.priority === "urgent");
+        reply = `Your sheet has ${issues.length} customer issue${issues.length === 1 ? "" : "s"}${high.length ? `, including ${high.length} high-priority` : ""}. Start with: "${issues[0].issue}".`;
+      }
+    } else if (routedIntent === "sheets_focus_recommendation") {
+      const recs = sheetsSummary.recommendations || [];
+      if (recs.length === 0) {
+        reply = "Your sheet looks healthy — no urgent recommendations right now.";
+      } else {
+        reply = `Based on your sheet, here is what I recommend: ${recs.slice(0, 3).join(" ")}`;
+      }
+    } else {
+      // General sheets_summary
+      const parts = [];
+      if (sheetsSummary.topProduct) parts.push(`${sheetsSummary.topProduct} is your top product with ₦${(sheetsSummary.topProductRevenue || 0).toLocaleString("en-NG")} revenue`);
+      if (sheetsSummary.lowStockItems?.length) parts.push(`${sheetsSummary.lowStockItems.length} item${sheetsSummary.lowStockItems.length === 1 ? " is" : "s are"} low stock`);
+      if (sheetsSummary.customerIssues?.length) parts.push(`${sheetsSummary.customerIssues.length} customer issue${sheetsSummary.customerIssues.length === 1 ? "" : "s"} in the sheet`);
+      if (parts.length) {
+        reply = `Your sheet shows: ${parts.join(", ")}.${sheetsSummary.recommendations?.length ? " Recommendation: " + sheetsSummary.recommendations[0] : ""}`;
+      } else {
+        reply = `I synced ${sheetsState.totalRows || 0} rows from your sheet. Add Name, Revenue, and Stock columns to get richer insights.`;
+      }
+    }
+
+    tasks.push(
+      { source: "Google Sheets", status: "active", text: "Review sheet data and insights" },
+      { source: "Amanda", status: "queued", text: "Surface recommendations from sheet data" },
+    );
+    memoryNote = `User asked about Google Sheets (${routedIntent}).`;
   } else if (intent.id === "pending_deliveries") {
     const pendingOrders = tools
       ? rememberAction("listOrders", tools.listOrders({ pendingOnly: true }))

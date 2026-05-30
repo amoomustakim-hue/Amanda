@@ -44,6 +44,19 @@ import {
   saveConnectorToken,
   syncEvents as syncGoogleCalendarEvents,
 } from "./src/connectors/google-calendar.js";
+import {
+  DEFAULT_SHEET_RANGES,
+  exchangeSheetsCodeForTokens,
+  getSheetsToken,
+  googleSheetsAuthUrl,
+  googleSheetsSetupStatus,
+  hasSheetsReadScope,
+  markSheetsConnected,
+  markSheetsDisconnected,
+  saveSheetsToken,
+  sheetsTokenStatus,
+  syncGoogleSheets,
+} from "./src/connectors/google-sheets.js";
 
 const scrypt = promisify(scryptCallback);
 
@@ -494,6 +507,7 @@ function defaultBusinessData(user) {
       approvalRequests: [],
       records: [],
       websiteEvents: [],
+      googleSheets: { connected: false, spreadsheetId: "", lastSyncedAt: null, parsedRanges: {}, summary: null, totalRows: 0 },
       updatedAt: createdAt,
     };
   }
@@ -841,6 +855,10 @@ function normalizeBusinessData(user, existing = {}) {
   }
 
   next.customerMessages = next.messages;
+  // googleSheets is an object, not an array — preserve or reset to default
+  if (!next.googleSheets || typeof next.googleSheets !== "object" || Array.isArray(next.googleSheets)) {
+    next.googleSheets = defaults.googleSheets || { connected: false, spreadsheetId: "", lastSyncedAt: null, parsedRanges: {}, summary: null, totalRows: 0 };
+  }
   next.updatedAt = next.updatedAt || defaults.updatedAt;
   return next;
 }
@@ -1591,6 +1609,38 @@ async function handleApi(request, response) {
     }
   }
 
+  // ── Google Sheets OAuth callback (no session required) ───────────────────
+  if (request.method === "GET" && url.pathname === "/api/connectors/google_sheets/callback") {
+    const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
+    if (!code || !state) { redirect(response, "/connectors?error=google_sheets_missing_code"); return; }
+    const db = await loadDb();
+    const stateRecord = consumeOAuthState(db, state);
+    if (!stateRecord || stateRecord.connectorId !== "google_sheets") {
+      await queueWrite();
+      redirect(response, "/connectors?error=google_sheets_invalid_state");
+      return;
+    }
+    const targetUser = db.users.find((u) => u.id === stateRecord.userId);
+    if (!targetUser) { await queueWrite(); redirect(response, "/connectors?error=google_sheets_user_missing"); return; }
+    try {
+      ensureUserDefaults(db, targetUser);
+      const tokenPayload = await exchangeSheetsCodeForTokens(code);
+      saveSheetsToken(db, targetUser.id, tokenPayload);
+      markSheetsConnected(db, targetUser.id, tokenPayload);
+      const tools = createAmandaTools({ businessData: db.businessDataByUser[targetUser.id], makeId, userId: targetUser.id });
+      tools.logAction("connectGoogleSheets", { externalWrite: false, mode: "real", scope: tokenPayload.scope || "" });
+      invalidateUserCache(targetUser.id);
+      await queueWrite();
+      redirect(response, "/connectors?connected=google_sheets");
+    } catch (error) {
+      console.warn(`Google Sheets OAuth callback failed: ${error.message}`);
+      await queueWrite();
+      redirect(response, "/connectors?error=google_sheets_oauth_failed");
+    }
+    return;
+  }
+
   // ── Website Connector: POST (session OR webhook secret) ──────────────────
   if (request.method === "POST" && url.pathname === "/api/connectors/website/events") {
     const webhookSecret = process.env.WEBSITE_CONNECTOR_SECRET;
@@ -2149,6 +2199,120 @@ async function handleApi(request, response) {
     });
     return;
   }
+
+  // ── Google Sheets protected endpoints ────────────────────────────────────
+
+  if (request.method === "GET" && url.pathname === "/api/connectors/google_sheets/connect") {
+    const setup = googleSheetsSetupStatus();
+    if (!setup.isConfigured) {
+      sendJson(response, 400, { ok: false, error: "Google Sheets OAuth is not configured yet.", missingEnv: setup.missingEnv });
+      return;
+    }
+    const db = await loadDb();
+    const state = randomBytes(18).toString("hex");
+    if (!db.oauthStates) db.oauthStates = {};
+    db.oauthStates[state] = { connectorId: "google_sheets", createdAt: new Date().toISOString(), userId: user.id };
+    await queueWrite();
+    const authUrl = googleSheetsAuthUrl(state);
+    redirect(response, authUrl);
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/connectors/google_sheets/setup") {
+    const setup = googleSheetsSetupStatus();
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const tokenStatus = sheetsTokenStatus(db, user.id);
+    const sheetState = db.businessDataByUser[user.id]?.googleSheets || {};
+    sendJson(response, 200, {
+      ok: true,
+      configured: setup.isConfigured,
+      connected: Boolean(tokenStatus.hasToken && hasSheetsReadScope(tokenStatus.scope || "")),
+      spreadsheetId: sheetState.spreadsheetId || "",
+      lastSyncedAt: sheetState.lastSyncedAt || null,
+      totalRows: sheetState.totalRows || 0,
+      missingEnv: setup.missingEnv,
+      scope: setup.scope,
+    });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/connectors/google_sheets/disconnect") {
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    markSheetsDisconnected(db, user.id);
+    const tools = createAmandaTools({ businessData: db.businessDataByUser[user.id], makeId, userId: user.id });
+    tools.logAction("disconnectGoogleSheets", { externalWrite: false });
+    invalidateUserCache(user.id);
+    await queueWrite();
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/connectors/google_sheets/config") {
+    const body = await parseBody(request);
+    const spreadsheetId = String(body?.spreadsheetId || "").trim();
+    if (!spreadsheetId) { sendJson(response, 400, { ok: false, error: "spreadsheetId is required." }); return; }
+    const ranges = Array.isArray(body?.ranges) ? body.ranges.filter((r) => typeof r === "string" && r.trim()) : DEFAULT_SHEET_RANGES;
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const data = db.businessDataByUser[user.id];
+    data.googleSheets = { ...(data.googleSheets || {}), spreadsheetId, ranges };
+    const tools = createAmandaTools({ businessData: data, makeId, userId: user.id });
+    tools.logAction("configureGoogleSheets", { spreadsheetId, rangeCount: ranges.length });
+    invalidateUserCache(user.id);
+    await queueWrite();
+    sendJson(response, 200, { ok: true, spreadsheetId, ranges });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/connectors/google_sheets/sync") {
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const result = await syncGoogleSheets(db, user.id, makeId);
+    if (result.ok) {
+      const tools = createAmandaTools({ businessData: db.businessDataByUser[user.id], makeId, userId: user.id });
+      tools.logAction("syncGoogleSheets", { totalRows: result.totalRows, warnings: result.warnings?.length || 0 });
+      invalidateUserCache(user.id);
+      await queueWrite();
+      sendJson(response, 200, { ok: true, totalRows: result.totalRows, warnings: result.warnings, summary: result.summary });
+    } else {
+      sendJson(response, 400, { ok: false, error: result.error });
+    }
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/connectors/google_sheets/summary") {
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const sheetState = db.businessDataByUser[user.id]?.googleSheets || {};
+    sendJson(response, 200, {
+      ok: true,
+      summary: sheetState.summary || null,
+      spreadsheetId: sheetState.spreadsheetId || "",
+      lastSyncedAt: sheetState.lastSyncedAt || null,
+      totalRows: sheetState.totalRows || 0,
+    });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/connectors/google_sheets/status") {
+    const db = await loadDb();
+    ensureUserDefaults(db, user);
+    const tokenStatus = sheetsTokenStatus(db, user.id);
+    const sheetState = db.businessDataByUser[user.id]?.googleSheets || {};
+    sendJson(response, 200, {
+      ok: true,
+      connected: Boolean(tokenStatus.hasToken),
+      hasReadScope: hasSheetsReadScope(tokenStatus.scope || ""),
+      spreadsheetId: sheetState.spreadsheetId || "",
+      lastSyncedAt: sheetState.lastSyncedAt || null,
+      totalRows: sheetState.totalRows || 0,
+    });
+    return;
+  }
+
+  // ── End Google Sheets endpoints ───────────────────────────────────────────
 
   if (request.method === "GET" && url.pathname === "/api/connectors") {
     const db = await loadDb();

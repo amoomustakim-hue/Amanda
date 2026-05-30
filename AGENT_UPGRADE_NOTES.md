@@ -1,5 +1,138 @@
 # Amanda Agent Upgrade Notes
 
+## Google Sheets Read-Only Connector
+
+### What this adds
+
+Amanda can connect to a Google Spreadsheet, read rows from configured ranges, summarize business data, and surface sheet insights in the Attention Engine and voice responses.
+
+### Files added / changed
+
+- `src/connectors/google-sheets.js` — OAuth connect/callback, token management, sheet reading, row parsing, and store summary analysis.
+- `server.js` — Google Sheets OAuth callback, `POST /config`, `POST /sync`, `GET /status`, `GET /summary`, `GET /setup`, `POST /disconnect` endpoints.
+- `src/agent/intent-router.js` — 5 new sheets intents.
+- `src/agent/brain.js` — `sheets_summary` handler covering all sub-intents.
+- `src/agent/attention-engine.js` — `collectSheetsSignals()` surfaces low stock, top product, and high-priority customer issues.
+- `scripts/test-google-sheets-readonly.mjs` — full test suite.
+- `.env.example` — `GOOGLE_SHEETS_SCOPES` and `GOOGLE_SHEETS_REDIRECT_URI` documented.
+- `package.json` — new test added to `check` command.
+
+### OAuth scope
+
+```
+https://www.googleapis.com/auth/spreadsheets.readonly
+```
+
+Uses the same `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` as Calendar and Gmail. The token is stored separately under `connectorTokensByUser[userId].google_sheets`.
+
+### API endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/connectors/google_sheets/connect` | Starts OAuth flow |
+| `GET` | `/api/connectors/google_sheets/callback` | OAuth callback (no session required) |
+| `POST` | `/api/connectors/google_sheets/disconnect` | Revokes local token |
+| `GET` | `/api/connectors/google_sheets/status` | Connection status |
+| `GET` | `/api/connectors/google_sheets/setup` | Full setup info |
+| `POST` | `/api/connectors/google_sheets/config` | Save spreadsheetId + ranges |
+| `POST` | `/api/connectors/google_sheets/sync` | Read ranges from Google Sheets API |
+| `GET` | `/api/connectors/google_sheets/summary` | Get locally cached summary |
+
+### Default ranges
+
+If no ranges are configured:
+
+```
+Orders!A1:H50
+Products!A1:H50
+Inventory!A1:F50
+Customer Issues!A1:G50
+Analytics!A1:F20
+```
+
+Ranges that do not exist in the spreadsheet are skipped with a warning. Other ranges continue syncing.
+
+### Sheet analysis
+
+`summarizeStoreSheet()` detects:
+
+- **Top product** — row with highest `revenue` / `sales` / `total` column value
+- **Low stock items** — rows where `stock` / `inventory` / `quantity` ≤ 5
+- **Customer issues** — rows with `issue` / `complaint` / `problem` columns
+- **Recommendations** — auto-generated from the above findings
+
+Column headers are matched case-insensitively by keyword (e.g. "Product Name", "product_name", "ProductName" all match `product`).
+
+### Attention Engine signals
+
+| Type | Score | Priority |
+|---|---|---|
+| `low_stock_item` (0 units) | 85 | high |
+| `low_stock_item` (1–2 units) | 82 | high |
+| `low_stock_item` (3–5 units) | 70 | medium |
+| `customer_issue_from_sheet` (high priority) | 80 | high |
+| `top_selling_product` | 65 | medium |
+
+### Voice commands
+
+| Phrase | Intent |
+|---|---|
+| "Check Google Sheets" / "Summarize my store sheet" | `sheets_summary` |
+| "What product sold the most from my sheet?" | `sheets_top_product` |
+| "Any low stock items in my sheet?" | `sheets_low_stock` |
+| "What issues are in my customer sheet?" | `sheets_customer_issues` |
+| "What should I focus on from my sheet?" | `sheets_focus_recommendation` |
+
+### Safety rules
+
+- Read-only only. `readSheetValues` and `readMultipleRanges` perform GET requests only.
+- No write, append, update, or delete Sheets API calls exist in this codebase.
+- Tokens are encrypted at rest with AES-256-GCM using `AMANDA_TOKEN_SECRET`.
+- Tokens are never returned in API responses or written to action logs.
+- Full sheet contents are not returned in voice replies — only summarized insights.
+
+### Setup steps
+
+1. Enable Google Sheets API in Google Cloud for the same project as Calendar/Gmail.
+2. Add `http://localhost:3010/api/connectors/google_sheets/callback` to Authorized redirect URIs.
+3. Set `GOOGLE_SHEETS_REDIRECT_URI=http://localhost:3010/api/connectors/google_sheets/callback` in `.env`.
+4. Restart Amanda.
+5. Open `/connectors`, find Google Sheets, click Connect.
+6. Complete Google OAuth.
+7. Add Spreadsheet ID on the Connectors page and click Save Sheet.
+8. Click Sync Sheet.
+
+### Environment variables
+
+```env
+GOOGLE_SHEETS_SCOPES=https://www.googleapis.com/auth/spreadsheets.readonly
+GOOGLE_SHEETS_REDIRECT_URI=http://localhost:3010/api/connectors/google_sheets/callback
+```
+
+### Tests run
+
+```bash
+npm run check
+node scripts/test-google-sheets-readonly.mjs   # 6 unit + 6 integration
+node scripts/test-voice-intents.mjs
+node scripts/test-attention-engine.mjs
+node scripts/test-website-connector.mjs
+node scripts/test-gmail-readonly.mjs
+node scripts/test-calendar-followups.mjs
+node scripts/test-gemini-brain.mjs
+```
+
+All pass.
+
+### Known limitations
+
+- Google Sheets OAuth is a separate flow from Calendar and Gmail (separate token record).
+- Sheet column detection is heuristic — columns must contain recognizable keywords like "product", "revenue", "stock", "issue".
+- No real-time sync; user must trigger sync manually from `/connectors`.
+- If the spreadsheet has non-standard tab names, configure the exact ranges using `POST /api/connectors/google_sheets/config`.
+
+---
+
 ## Keyboard Text Input for Voice Mode
 
 ### Why it was added

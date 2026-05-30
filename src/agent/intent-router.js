@@ -704,6 +704,117 @@ export function routeIntent(message, options = {}) {
 
   // ── End website connector intents ─────────────────────────────────────────
 
+  // ── Google Sheets intents ─────────────────────────────────────────────────
+
+  if (
+    hasAny(text, [
+      "what product sold the most from my sheet",
+      "top product in my sheet",
+      "best selling product in sheet",
+      "what sold most in my sheet",
+      "top seller from my sheet",
+    ]) ||
+    /\b(?:top|best)\s+(?:selling|seller|product)\b.*\bsheet\b/.test(text)
+  ) {
+    return {
+      confidence: 0.96,
+      entities: {},
+      intent: "sheets_top_product",
+      requiresTool: true,
+      routedTo: "sheets.topProduct",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "any low stock items in my sheet",
+      "low stock items in sheet",
+      "what is low stock in my sheet",
+      "inventory low stock from sheet",
+      "show low stock from sheet",
+    ]) ||
+    /\blow\s+stock\b.*\bsheet\b/.test(text)
+  ) {
+    return {
+      confidence: 0.96,
+      entities: {},
+      intent: "sheets_low_stock",
+      requiresTool: true,
+      routedTo: "sheets.lowStock",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "what issues are in my customer sheet",
+      "customer issues from my sheet",
+      "show customer issues in sheet",
+      "any issues in my sheet",
+      "problems in customer sheet",
+    ]) ||
+    /\bcustomer\s+issues?\b.*\bsheet\b/.test(text)
+  ) {
+    return {
+      confidence: 0.96,
+      entities: {},
+      intent: "sheets_customer_issues",
+      requiresTool: true,
+      routedTo: "sheets.customerIssues",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "what should i focus on from my sheet",
+      "recommendations from my sheet",
+      "sheet recommendations",
+      "what does my sheet say to focus on",
+      "sheet insights",
+      "sheet priorities",
+    ]) ||
+    /\b(?:focus|recommend|priorit)\w*\b.*\bsheet\b/.test(text)
+  ) {
+    return {
+      confidence: 0.95,
+      entities: {},
+      intent: "sheets_focus_recommendation",
+      requiresTool: true,
+      routedTo: "sheets.focusRecommendation",
+      usedFollowUpContext: false,
+    };
+  }
+
+  if (
+    hasAny(text, [
+      "check google sheets",
+      "summarize my store sheet",
+      "summarize my sheet",
+      "what is in my sheet",
+      "what does my sheet show",
+      "sheet summary",
+      "google sheets summary",
+      "read my sheet",
+      "sync google sheets",
+      "check my sheet",
+    ]) ||
+    /\bgoogle\s+sheets?\b/.test(text) ||
+    /\bmy\s+(?:store\s+)?sheet\b/.test(text)
+  ) {
+    return {
+      confidence: 0.95,
+      entities: {},
+      intent: "sheets_summary",
+      requiresTool: true,
+      routedTo: "sheets.summary",
+      usedFollowUpContext: false,
+    };
+  }
+
+  // ── End Google Sheets intents ──────────────────────────────────────────────
+
   if (hasAny(text, ["check customer messages", "customer messages", "check messages", "support messages"])) {
     return {
       confidence: 0.93,

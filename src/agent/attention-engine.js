@@ -365,6 +365,63 @@ function collectWebsiteSignals(events = []) {
     });
 }
 
+function collectSheetsSignals(googleSheets = {}) {
+  const summary = googleSheets?.summary;
+  if (!summary || !googleSheets.lastSyncedAt) return [];
+  const results = [];
+
+  // Low stock items — high priority
+  for (const stockEntry of (summary.lowStockItems || []).slice(0, 5)) {
+    results.push(item({
+      createdAt: googleSheets.lastSyncedAt,
+      description: `Only ${stockEntry.stock} unit${stockEntry.stock === 1 ? "" : "s"} of ${stockEntry.name} remaining in your sheet.`,
+      id: makeId("attention", `sheets_low_stock_${String(stockEntry.name).replace(/\W/g, "_")}`),
+      priority: stockEntry.stock === 0 ? "high" : stockEntry.stock <= 2 ? "high" : "medium",
+      reason: "Low inventory may block sales.",
+      recommendedAction: `Restock ${stockEntry.name} as soon as possible.`,
+      score: stockEntry.stock === 0 ? 85 : stockEntry.stock <= 2 ? 82 : 70,
+      source: "google_sheets",
+      title: `${stockEntry.name} is ${stockEntry.stock === 0 ? "out of stock" : "low stock"} (${stockEntry.stock} left)`,
+      type: "low_stock_item",
+    }));
+  }
+
+  // Top product — medium priority (opportunity)
+  if (summary.topProduct && summary.topProductRevenue > 0) {
+    results.push(item({
+      createdAt: googleSheets.lastSyncedAt,
+      description: `${summary.topProduct} is generating ₦${(summary.topProductRevenue).toLocaleString("en-NG")} in revenue.`,
+      id: makeId("attention", `sheets_top_product_${String(summary.topProduct).replace(/\W/g, "_")}`),
+      priority: "medium",
+      reason: "Top revenue product — promote and keep in stock.",
+      recommendedAction: `Ensure ${summary.topProduct} is well-stocked and promoted.`,
+      score: 65,
+      source: "google_sheets",
+      title: `Top seller: ${summary.topProduct}`,
+      type: "top_selling_product",
+    }));
+  }
+
+  // High-priority customer issues from sheet
+  const highIssues = (summary.customerIssues || []).filter((i) => i.priority === "high" || i.priority === "urgent").slice(0, 3);
+  for (const issue of highIssues) {
+    results.push(item({
+      createdAt: googleSheets.lastSyncedAt,
+      description: cleanText(issue.issue).slice(0, 180),
+      id: makeId("attention", `sheets_issue_${String(issue.customer || issue.issue).replace(/\W/g, "_").slice(0, 30)}`),
+      priority: "high",
+      reason: "High-priority customer issue recorded in your sheet.",
+      recommendedAction: "Follow up with the customer immediately.",
+      score: 80,
+      source: "google_sheets",
+      title: `Customer issue${issue.customer ? ` from ${issue.customer}` : ""}`,
+      type: "customer_issue_from_sheet",
+    }));
+  }
+
+  return results;
+}
+
 export async function getUnifiedAttentionSummary(userId, { businessData = {}, connectors = [], now = new Date(), useGemini = true } = {}) {
   const items = dedupeAndRank([
     ...collectGmailSignals(businessData.gmailMessages || []),
@@ -373,6 +430,7 @@ export async function getUnifiedAttentionSummary(userId, { businessData = {}, co
     ...collectCalendarSignals(businessData.calendarEvents || [], now),
     ...collectTaskSignals(businessData.tasks || [], now),
     ...collectWebsiteSignals(businessData.websiteEvents || []),
+    ...collectSheetsSignals(businessData.googleSheets || {}),
     ...collectConnectorSignals(connectors.length ? connectors : businessData.connectors || [], now),
   ]);
   const deterministic = deterministicSummary(items);
